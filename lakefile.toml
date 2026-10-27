@@ -1,0 +1,16 @@
+name = "jws"
+version = "0.1.0"
+defaultTargets = ["Json", "Jws", "Proofs", "jws"]
+
+[[lean_lib]]
+name = "Json"
+
+[[lean_lib]]
+name = "Jws"
+
+[[lean_lib]]
+name = "Proofs"
+
+[[lean_exe]]
+name = "jws"
+root = "Main"
