@@ -11,6 +11,9 @@ name = "Jws"
 [[lean_lib]]
 name = "Proofs"
 
+[[lean_lib]]
+name = "Spec"
+
 [[lean_exe]]
 name = "jws"
 root = "Main"

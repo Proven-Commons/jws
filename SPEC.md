@@ -182,3 +182,27 @@ is malformed (wrong field count, a field that is not a code
 list, a code that is not a Unicode scalar value, a current
 time field that is not an optional minus sign plus at most 19
 digits, an unknown operation).
+
+## Properties and their theorems
+
+Each property a reader can check in the page (`README.md`)
+names its theorem. The theorems are stated in `Spec.lean`
+and proved in `Proofs/SpecProofs.lean`. The single token
+theorems are single inputs, one for each named fixed case
+in the test harness, run through the same `Jws.parseToken`
+and `Jws.accept` the command line tool calls; the tests in
+`tests/` cover each rule on many more inputs.
+
+| Property | Theorem |
+|----------|---------|
+| Parsing the printed form of a token gives the token back, for well formed JSON parts | `Spec.parseToken_print` |
+| Decoding a base64url encoding gives the bytes back | `Spec.decode_encode` |
+| The RFC 7515 A.1 token is accepted under its allowlist with no time checks and the issuer checked | `Spec.accepts_rfc_a1` |
+| The harness's hand built token is accepted under its base context | `Spec.accepts_hand_built` |
+| The RFC 7515 A.5 unsecured token is refused under an HS256 allowlist | `Spec.rejects_unsecured_none` |
+| The A.5 token is refused when the allowlist names `none` | `Spec.rejects_unsecured_none_when_allowlist_names_none` |
+| The A.5 token is refused when the allowlist names `none` alongside HS256 | `Spec.rejects_unsecured_none_when_allowlist_mixes_none` |
+| A token with an empty signature part is refused (rule 2) | `Spec.rejects_empty_signature` |
+| A token whose algorithm is outside the allowlist is refused (rule 7) | `Spec.rejects_alg_outside_allowlist` |
+| A token with a part that is not strict base64url does not parse | `Spec.rejects_part_not_base64url` |
+| A token whose header is not a JSON object is refused (rule 3) | `Spec.rejects_header_not_object` |
