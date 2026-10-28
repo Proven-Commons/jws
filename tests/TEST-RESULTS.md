@@ -4,7 +4,7 @@ Written by `python3 tests/run_tests.py`, which drives the built tool `.lake/buil
 
 - Oracle: the SPEC.md rules reimplemented in tests/run_tests.py (Python 3.13), with tokens and decodes from PyJWT 2.15.1 (cryptography 46.0.3)
 - Seed: 20261026
-- Inputs: 454
+- Inputs: 466
 - Failures: 0
 
 ## The oracle and PyJWT
@@ -14,9 +14,9 @@ PyJWT's decode was compared with the oracle's parse on 20 tokens: 20 agreements,
 
 ## Counts
 
-- Total check and request inputs: 454
-- Agreements with the oracle: 454
-- Of the verdict cases: 38 accepted, 406 rejected, 10 malformed requests answered error
+- Total check and request inputs: 466
+- Agreements with the oracle: 466
+- Of the verdict cases: 47 accepted, 409 rejected, 10 malformed requests answered error
 
 ## RFC 7515 fixed cases
 
@@ -47,6 +47,7 @@ The A.5 example is the RFC's unsecured (alg none) compact example; in the final 
 - Named change from review 1 item 3: an accepted token is answered with the token text as received, not a canonical reprint, so its signature still matches its signing input. The RFC 7515 A.1 HMAC (with the RFC's key) was checked on the tool's answer for 3 A.1 accept cases, and on the A.1 input itself: verifies.
 - Named change from review 1 item 6: with no expected audience, a token that carries `aud` is turned away (SPEC rule 16). RFC 7519 section 4.1.3 asks a reader that does not identify itself with a value in `aud` to reject the token. PyJWT reads it the same way; some other libraries accept such a token. Generated tokens with `aud` under a context with no audience now expect refusal in the oracle.
 - The none rule is the exact name `none`. An alg of `None` is a different name and can be allowed.
-- Date claims are judged by value, not by spelling: `2.0e9` and `20000000000e-1` are the whole number 2000000000, and `1e999999999` compares without ever being written out.
+- Named change from review 1 item 7: `exp`, `nbf` and `iat` may be non-integers (RFC 7519 section 2) and are compared exactly with the current time (SPEC rule 9). The earlier reading turned every fractional date away; the three fixed cases that pinned it now expect acceptance, and new cases cover fractions a millionth either side of now, equality, `nbf`, and exponents of -999999999.
+- Date claims are judged by value, not by spelling: `2.0e9` and `20000000000e-1` are the number 2000000000, and `1e999999999` compares without ever being written out.
 - PyJWT decode differences (its parser against the oracle's on well formed tokens): 0.
 

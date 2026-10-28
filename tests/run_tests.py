@@ -25,7 +25,7 @@ Three parts, matching the slice plan:
    outside the alphabet, two or four parts, a header that is not
    an object, alg missing, alg none with an empty signature,
    exp equal to now, nbf equal to now, audience arrays that do
-   and do not hold the expected value, a fractional exp, and
+   and do not hold the expected value, fractional dates, and
    more; plus request lines that must be answered with `error`.
 
 The oracle is the authority for verdicts. PyJWT never decides a
@@ -171,16 +171,15 @@ NUM_RE = re.compile(r"^-?(0|[0-9]+)(\.[0-9]+)?([eE][+-]?[0-9]+)?$")
 
 
 def date_claim(claims, name):
-    """'absent', 'bad', or a Decimal integer value."""
+    """'absent', 'bad', or the exact Decimal value. A NumericDate
+    may be a non-integer (RFC 7519 section 2; SPEC rule 9), and
+    Decimal compares exactly."""
     v = lookup(name, claims)
     if v is None:
         return "absent"
     if v[0] != "num" or not NUM_RE.match(v[1]):
         return "bad"
-    d = Decimal(v[1])
-    if d != d.to_integral_value():
-        return "bad"
-    return d
+    return Decimal(v[1])
 
 
 def shape_ok(claims):
@@ -500,12 +499,50 @@ add_check("nbf equal to now (accept)",
 add_check("mutation: nbf one second after now (reject)",
           claims_token(b'{"nbf":1500000001,"exp":2000000000}'),
           NOW, ["HS256"], [], None, None)
-add_check("mutation: fractional exp (reject)",
+# Fractional NumericDates are allowed (RFC 7519 section 2) and
+# compared exactly (SPEC rule 9). These first two cases pinned the
+# old whole-seconds reading as rejects; review 1 item 7.
+add_check("fractional exp, far after now (accepted)",
           claims_token(b'{"exp":2000000000.5}'),
           NOW, ["HS256"], [], None, None)
-add_check("mutation: fractional exp with no time checks (reject)",
+add_check("fractional exp with no time checks (accepted)",
           claims_token(b'{"exp":2000000000.5}'),
           None, ["HS256"], [], None, None)
+FRAC_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.AQID"
+add_check("fractional exp, now half a second before: accepted",
+          FRAC_TOKEN, 2000000000, ["HS256"], [], None, None)
+add_check("fractional exp, now half a second after: refused",
+          FRAC_TOKEN, 2000000001, ["HS256"], [], None, None)
+add_check("exp 1500000000.0 equals now: refused",
+          claims_token(b'{"exp":1500000000.0}'),
+          NOW, ["HS256"], [], None, None)
+add_check("exp a millionth after now: accepted",
+          claims_token(b'{"exp":1500000000.000001}'),
+          NOW, ["HS256"], [], None, None)
+add_check("exp a millionth before now: refused",
+          claims_token(b'{"exp":1499999999.999999}'),
+          NOW, ["HS256"], [], None, None)
+add_check("nbf half a second after now: refused",
+          claims_token(b'{"nbf":1500000000.5,"exp":2000000000}'),
+          NOW, ["HS256"], [], None, None)
+add_check("nbf a tenth before now: accepted",
+          claims_token(b'{"nbf":1499999999.9,"exp":2000000000}'),
+          NOW, ["HS256"], [], None, None)
+add_check("exp as a scaled fraction 15000000005e-1 (accepted)",
+          claims_token(b'{"exp":15000000005e-1}'),
+          NOW, ["HS256"], [], None, None)
+add_check("exp a tiny positive 1e-999999999, now zero: accepted",
+          claims_token(b'{"exp":1e-999999999}'),
+          0, ["HS256"], [], None, None)
+add_check("exp a tiny negative -1e-999999999, now zero: refused",
+          claims_token(b'{"exp":-1e-999999999}'),
+          0, ["HS256"], [], None, None)
+add_check("nbf a tiny positive 1e-999999999, now zero: refused",
+          claims_token(b'{"nbf":1e-999999999}'),
+          0, ["HS256"], [], None, None)
+add_check("exp a negative fraction -0.5, now -1: accepted",
+          claims_token(b'{"exp":-0.5}'),
+          -1, ["HS256"], [], None, None)
 add_check("mutation: exp as a string (reject)",
           claims_token(b'{"exp":"2000000000"}'),
           NOW, ["HS256"], [], None, None)
@@ -524,7 +561,7 @@ add_check("mutation: negative exp, now zero (reject)",
 add_check("negative now before a small exp (accept)",
           claims_token(b'{"exp":100}'),
           -5, ["HS256"], [], None, None)
-add_check("mutation: fractional iat (reject)",
+add_check("fractional iat (accepted; pinned the old reading as a reject)",
           claims_token(b'{"iat":1.5,"exp":2000000000}'),
           NOW, ["HS256"], [], None, None)
 add_check("iat whole in exponent form (accept)",
@@ -1020,8 +1057,16 @@ def main():
                      " expect refusal in the oracle.")
     lines_out.append("- The none rule is the exact name `none`. An alg of"
                      " `None` is a different name and can be allowed.")
+    lines_out.append("- Named change from review 1 item 7: `exp`, `nbf`"
+                     " and `iat` may be non-integers (RFC 7519 section 2)"
+                     " and are compared exactly with the current time"
+                     " (SPEC rule 9). The earlier reading turned every"
+                     " fractional date away; the three fixed cases that"
+                     " pinned it now expect acceptance, and new cases"
+                     " cover fractions a millionth either side of now,"
+                     " equality, `nbf`, and exponents of -999999999.")
     lines_out.append("- Date claims are judged by value, not by spelling:"
-                     " `2.0e9` and `20000000000e-1` are the whole number"
+                     " `2.0e9` and `20000000000e-1` are the number"
                      " 2000000000, and `1e999999999` compares without"
                      " ever being written out.")
     lines_out.append("- PyJWT decode differences (its parser against the"

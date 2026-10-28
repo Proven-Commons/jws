@@ -93,6 +93,8 @@ where they end in `sorry`) and proved in
 | When the check accepts a token, under any context, its header and its claims are JSON objects and neither repeats a member name. | `Spec.accept_names_unique` |
 | The token `eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","alg":"none"}`, parses and is refused under every context. | `Spec.rejects_duplicate_alg` |
 | The token whose claims are `{"iss":"joe","exp":2000000000,"iss":"evil"}` (header `{"alg":"HS256"}`, signature bytes 01 02 03) parses and is refused under every context. | `Spec.rejects_duplicate_iss` |
+| The token `eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.AQID`, whose claims are `{"exp":2000000000.5}`, parses and is accepted at the current time 2000000000 with HS256 allowed: a fractional expiry is compared exactly. | `Spec.accepts_fractional_exp_before` |
+| The same token is refused at the current time 2000000001, after it expired. | `Spec.rejects_fractional_exp_after` |
 | The token `eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.AQID`, whose claims are `{"iss":"joe","exp":2000000000,"aud":"other-tenant"}`, parses and is refused when HS256 is allowed, the current time is 1500000000, the issuer must be `joe`, and no audience is expected. | `Spec.rejects_aud_without_audience` |
 | The same token is accepted under the same context when the expected audience is `other-tenant`. | `Spec.accepts_aud_with_audience` |
 | When the check accepts a token, under any context, its header is a JSON object with no `crit` member. | `Spec.accept_no_crit` |
@@ -153,11 +155,14 @@ directly, the same functions the theorems are about.
   or `makeToken`, has parts and values that match: the
   `Token` structure does not enforce it, and the theorems
   cover only those two ways of making one.
-- Anything about the numeric meaning of claims beyond
-  the exact decimal reading the checker itself uses
-  (whole seconds, comparisons). The reading code is
-  exercised by the tests, including exponent spellings
-  and very large exponents.
+- That the checker's exact decimal reading of a date
+  claim (`Jws.numVal`) and its comparison
+  (`Jws.NumVal.cmp`) agree with the decimal value of the
+  number text. The theorems state the date rules in the
+  checker's own terms; the agreement rests on the tests,
+  which compare it with Python's `Decimal`, including
+  fractions, exponent spellings, and exponents of
+  999999999 and -999999999.
 - Reading requests and printing answers in `Main.lean`:
   line splitting, the field format, the decimal code
   reading. The tests cover them, malformed requests
@@ -165,7 +170,7 @@ directly, the same functions the theorems are about.
 - Speed. The code works on lists, which suits proofs,
   not large tokens.
 
-Four readings worth naming, all stated in `SPEC.md` and
+Five readings worth naming, all stated in `SPEC.md` and
 pinned by tests:
 
 - An empty signature part is well formed base64url, but
@@ -196,6 +201,10 @@ pinned by tests:
   a value in `aud` to reject the token. PyJWT reads it
   the same way; some other libraries accept such a
   token.
+- `exp`, `nbf`, and `iat` may be fractional (RFC 7519
+  section 2 lets a NumericDate be a non-integer), and are
+  compared exactly with the current time, a whole number
+  of seconds (`SPEC.md` rule 9).
 
 ## What you must trust
 

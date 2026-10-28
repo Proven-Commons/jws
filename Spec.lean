@@ -276,3 +276,32 @@ theorem Spec.accepts_aud_with_audience :
         { allow := ["HS256".toList], now := some 1500000000, required := [],
           issuer := some "joe".toList, audience := some "other-tenant".toList })
       = some true := sorry
+
+/-! ## Fractional NumericDates
+
+RFC 7519 section 2 lets a NumericDate be a non-integer. The check
+compares such a value exactly with the current time. -/
+
+/-- The token with claims `{"exp":2000000000.5}`, header
+    `{"alg":"HS256"}` and signature bytes 01 02 03 parses and is
+    accepted at the current time 2000000000, half a second before
+    it expires, with HS256 allowed. The harness case is
+    "fractional exp, now half a second before: accepted". -/
+theorem Spec.accepts_fractional_exp_before :
+    (parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.AQID".toList).map
+      (fun t => accept t
+        { allow := ["HS256".toList], now := some 2000000000, required := [],
+          issuer := none, audience := none })
+      = some true := sorry
+
+/-- The same token is refused one second later, at 2000000001,
+    after it has expired. The harness case is "fractional exp, now
+    half a second after: refused". -/
+theorem Spec.rejects_fractional_exp_after :
+    (parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.AQID".toList).map
+      (fun t => accept t
+        { allow := ["HS256".toList], now := some 2000000001, required := [],
+          issuer := none, audience := none })
+      = some false := sorry

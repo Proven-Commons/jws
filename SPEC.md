@@ -98,13 +98,14 @@ The token is accepted only when every rule holds:
    is all this rule asks; the value's type does not matter for
    this rule.
 9. When `exp`, `nbf`, or `iat` is present, its value must be a
-   JSON number whose value is a whole number of seconds. A
-   non-number, or a number with a fractional part (for example
-   `2000000000.5`), turns the token away. This type rule holds
-   even when no current time is supplied. The value is judged
-   as an exact decimal, not by its spelling: `2.0e9` is the
-   whole number 2000000000, and a value like `1e999999999` is
-   compared exactly, without ever being written out in full.
+   JSON number. A non-number turns the token away. This type
+   rule holds even when no current time is supplied. The value
+   need not be a whole number: RFC 7519 section 2 lets a
+   NumericDate be a non-integer, so `2000000000.5` is half a
+   second after 2000000000. The value is judged as an exact
+   decimal, not by its spelling: `2.0e9` is 2000000000, and a
+   value like `1e999999999` or `1e-999999999` is compared
+   exactly, without ever being written out in full.
 10. When `exp` is present and a current time is supplied, the
     current time must be before `exp`. A current time equal to
     `exp` rejects (the token is expired at that second).
@@ -258,6 +259,8 @@ and `Jws.accept` the command line tool calls; the tests in
 | An accepted token's header and claims are objects that repeat no member name (rules 3, 4, 17) | `Spec.accept_names_unique` |
 | The token with header `{"alg":"HS256","alg":"none"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_alg` |
 | The token with claims `{"iss":"joe","exp":2000000000,"iss":"evil"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_iss` |
+| A token with `exp` 2000000000.5 is accepted at 2000000000 (rules 9, 10) | `Spec.accepts_fractional_exp_before` |
+| The same token is refused at 2000000001 (rules 9, 10) | `Spec.rejects_fractional_exp_after` |
 | A token carrying `aud` is refused when no audience is expected (rule 16) | `Spec.rejects_aud_without_audience` |
 | The same token is accepted when its audience is the expected one | `Spec.accepts_aud_with_audience` |
 | An accepted token's header has no `crit` member (rule 18) | `Spec.accept_no_crit` |

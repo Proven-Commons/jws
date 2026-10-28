@@ -175,3 +175,21 @@ theorem Spec.accepts_aud_with_audience :
           issuer := some "joe".toList, audience := some "other-tenant".toList })
       = some true := by
   decide +kernel
+
+theorem Spec.accepts_fractional_exp_before :
+    (parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.AQID".toList).map
+      (fun t => accept t
+        { allow := ["HS256".toList], now := some 2000000000, required := [],
+          issuer := none, audience := none })
+      = some true := by
+  decide +kernel
+
+theorem Spec.rejects_fractional_exp_after :
+    (parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.AQID".toList).map
+      (fun t => accept t
+        { allow := ["HS256".toList], now := some 2000000001, required := [],
+          issuer := none, audience := none })
+      = some false := by
+  decide +kernel

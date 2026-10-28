@@ -24,7 +24,7 @@ code = [
   "Jws.makeToken",
   # The exact decimal reading of claim numbers, which the check uses.
   "Jws.NumVal", "Jws.digitsVal", "Jws.strip", "Jws.mkNumVal",
-  "Jws.numVal", "Jws.NumVal.isInt", "Jws.NumVal.ofInt",
+  "Jws.numVal", "Jws.numVal.finish", "Jws.numVal.withExp", "Jws.NumVal.ofInt",
   "Jws.numDigits", "Jws.magCmp", "Jws.NumVal.cmp",
   # The check: the context, the claim reading, the accept function.
   "Jws.Context", "Jws.Context.mk", "Jws.Context.allow", "Jws.Context.now",

@@ -160,10 +160,6 @@ where
       some (mkNumVal neg (digitsVal (ids ++ fds))
         (sgn * (digitsVal eds : Int) - (fds.length : Int)))
 
-/-- Whether a number value is a whole number of seconds. -/
-def NumVal.isInt (v : NumVal) : Bool :=
-  v.sig = 0 || 0 ≤ v.exp
-
 /-- A whole number as a number value. -/
 def NumVal.ofInt (n : Int) : NumVal :=
   mkNumVal (n < 0) n.natAbs 0
@@ -218,9 +214,9 @@ def namesUnique : List (List Char) → Bool
   | n :: ns => !ns.contains n && namesUnique ns
 
 /-- The state of one date claim (exp, nbf, iat) in a claims set:
-    absent, present but not a whole number of seconds (a
-    non-number, or a number with a fraction), or present with a
-    whole number value. -/
+    absent, present but not a JSON number, or present with its
+    exact value. A NumericDate need not be a whole number (RFC 7519
+    section 2), so a fraction is kept and compared exactly. -/
 inductive ClaimDate where
   | absent
   | bad
@@ -231,7 +227,7 @@ def dateClaim (name : List Char) (claims : Json) : ClaimDate :=
   | none => .absent
   | some (.num cs) =>
     match numVal cs with
-    | some v => if v.isInt then .ok v else .bad
+    | some v => .ok v
     | none => .bad
   | some _ => .bad
 
