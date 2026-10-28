@@ -2,7 +2,7 @@
 
 This is the first slice of the jws repo: parse a JWS in compact
 form (RFC 7515 section 5.2), run a set of shape and claims
-checks on it, and print it back in a canonical form.
+checks on it, and give the received token back unchanged.
 
 **This slice does not verify the signature.** A token that
 passes every check below is well formed and its claims are
@@ -154,22 +154,41 @@ every pair as written; only the check turns repeats away.
 
 ## Model and printing
 
-A token value holds the header JSON value, the claims JSON
-value, and the signature bytes. Printing a token prints each
-JSON part with the json slice's canonical printer (no spaces,
-object pairs in the order held, numbers kept as their source
-text, strings escaped in that printer's fixed way), encodes the
-text as UTF-8, base64url-encodes without padding, and joins the
-three parts with dots, the signature last.
+A token value holds the first two parts exactly as received
+(the header part and the payload part, base64url text), the
+header JSON value and the claims JSON value they decode to, and
+the signature bytes. Keeping the two parts matters: with the dot
+between them they are the JWS Signing Input of RFC 7515 section
+5.2 step 8, which a signature verifier needs byte for byte, and
+the JSON printer below does not give back the text it parsed
+(it drops whitespace, for one; RFC 7515 A.1's header has a CR LF
+and a space in it).
 
-The main claim, proved in this repo: for a token whose JSON
-parts are well formed in the json slice's sense (its `WF`),
-parsing the printed token gives the token back
-(`Jws.Proofs.parseToken_print`). Under it, the base64url round
-trips (both directions, for arbitrary bytes and for every text
-the decoder accepts) and the UTF-8 decode-after-encode round
-trip are also proved, and the json slice's own parse-after-print
-theorem is carried in with its code.
+Printing a token writes the two held parts, then the signature
+bytes in base64url without padding, joined by dots. For a parsed
+token this gives back the received text, byte for byte
+(`Spec.printToken_parse`): the parser keeps the first two parts,
+and the strict base64url decoder accepts a signature part only
+when it is the canonical encoding of its bytes. What the parser
+reads is stated too (`Spec.parseToken_reads`): the text splits at
+its dots into exactly those three parts, and the header and
+claims values are what the two held parts decode to through
+strict base64url, strict UTF-8, and the JSON parser.
+
+A token can also be made from values (`Jws.makeToken`): each JSON
+part is written with the json slice's canonical printer (no
+spaces, object pairs in the order held, numbers kept as their
+source text, strings escaped in that printer's fixed way),
+encoded as UTF-8, and base64url-encoded without padding. For
+values that are well formed in the json slice's sense (its `WF`),
+parsing the printed form of such a token gives the same token back
+(`Spec.parseToken_print`). Under it, the base64url round trips
+(both directions, for arbitrary bytes and for every text the
+decoder accepts) and the UTF-8 decode-after-encode round trip are
+proved, and the json slice's own parse-after-print theorem is
+carried in with its code. The json slice proves no
+print-after-parse direction, and none holds, which is why the
+token keeps the received parts.
 
 ## The command line front end
 
@@ -199,7 +218,8 @@ separated decimal form as the payload:
 - Field 6: the expected audience. Empty means none.
 
 The answer is `ok:` followed by the character codes of the
-canonical reprinted token when the token is accepted, `none`
+token text as received (the print of the parsed token, proved
+equal to the input) when the token is accepted, `none`
 when it is not accepted, and `error` when the request itself
 is malformed (wrong field count, a field that is not a code
 list, a code that is not a Unicode scalar value, a current
@@ -218,7 +238,9 @@ and `Jws.accept` the command line tool calls; the tests in
 
 | Property | Theorem |
 |----------|---------|
-| Parsing the printed form of a token gives the token back, for well formed JSON parts | `Spec.parseToken_print` |
+| Printing a parsed token gives the received text back, byte for byte | `Spec.printToken_parse` |
+| A parsed token holds the received first two parts, the values they decode to, and the signature bytes whose base64url is the third part | `Spec.parseToken_reads` |
+| Parsing the printed form of a token made from well formed JSON values gives that token back | `Spec.parseToken_print` |
 | Decoding a base64url encoding gives the bytes back | `Spec.decode_encode` |
 | The RFC 7515 A.1 token is accepted under its allowlist with no time checks and the issuer checked | `Spec.accepts_rfc_a1` |
 | The harness's hand built token is accepted under its base context | `Spec.accepts_hand_built` |

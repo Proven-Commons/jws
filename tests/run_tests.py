@@ -40,6 +40,8 @@ with real counts.
 """
 
 import base64
+import hashlib
+import hmac
 import json
 import random
 import re
@@ -145,49 +147,6 @@ def json_parse(text):
     return out
 
 
-HEX = "0123456789abcdef"
-
-
-def json_print(v):
-    tag = v[0]
-    if tag == "null":
-        return "null"
-    if tag == "bool":
-        return "true" if v[1] else "false"
-    if tag == "num":
-        return v[1]
-    if tag == "str":
-        out = ['"']
-        for ch in v[1]:
-            n = ord(ch)
-            if ch == '"':
-                out.append('\\"')
-            elif ch == "\\":
-                out.append("\\\\")
-            elif n == 8:
-                out.append("\\b")
-            elif n == 9:
-                out.append("\\t")
-            elif n == 10:
-                out.append("\\n")
-            elif n == 12:
-                out.append("\\f")
-            elif n == 13:
-                out.append("\\r")
-            elif n < 32:
-                out.append("\\u00" + HEX[n // 16] + HEX[n % 16])
-            else:
-                out.append(ch)
-        out.append('"')
-        return "".join(out)
-    if tag == "arr":
-        return "[" + ",".join(json_print(x) for x in v[1]) + "]"
-    if tag == "obj":
-        return "{" + ",".join(json_print(("str", k)) + ":" + json_print(x)
-                              for (k, x) in v[1]) + "}"
-    raise BadJson(tag)
-
-
 def lookup(name, obj):
     """The member of that name. The oracle reads names only from
     objects it has found to repeat no name (names_unique below), as
@@ -240,7 +199,10 @@ def shape_ok(claims):
 
 
 def oracle_check(token_text, now, allow, required, issuer, audience):
-    """The canonical reprinted token when accepted, else None.
+    """The token text as received when accepted, else None. The
+    tool answers an accepted token with Jws.printToken of the parsed
+    token, which keeps the two first parts as received
+    (Spec.printToken_parse), so the answer is the input itself.
 
     now is None for no time comparisons. allow, required are
     lists of names. issuer, audience are strings or None."""
@@ -313,12 +275,7 @@ def oracle_check(token_text, now, allow, required, issuer, audience):
                 return None
         else:
             return None
-    canon = ".".join([
-        b64url_encode(json_print(header).encode("utf-8")),
-        b64url_encode(json_print(claims).encode("utf-8")),
-        b64url_encode(raws[2]),
-    ])
-    return canon
+    return token_text
 
 
 # ---------------------------------------------------------------
@@ -363,7 +320,7 @@ def decode_answer(ans):
 
 # ---------------------------------------------------------------
 # Case collection. Each entry: (name, request line, expected)
-# where expected is a token text (accepted, canonical), None
+# where expected is a token text (accepted: the text as received), None
 # (rejected), or "error" (malformed request).
 # ---------------------------------------------------------------
 
@@ -687,7 +644,8 @@ add_check("b64 false without crit (not understood, not critical):"
           " accepted",
           hand_token(b'{"alg":"HS256","b64":false}', GOOD_P, SIG),
           NOW, ["HS256"], [], None, None)
-add_check("payload whitespace and key order kept in the reprint",
+add_check("payload whitespace and key order: the answer is the"
+          " received text",
           claims_token(b'{ "exp" : 2000000000 , "iss" : "joe" }'),
           NOW, ["HS256"], [], "joe", None)
 
@@ -805,6 +763,22 @@ def build_pyjwt_cases():
 # Random differential corpus (oracle builds and settles all).
 # ---------------------------------------------------------------
 
+A1_KEY = base64.urlsafe_b64decode(
+    "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcg"
+    "UuTwjAzZr1Z9CAow==")
+
+
+def a1_signature_ok(token_text):
+    """HMAC-SHA256 with the RFC 7515 A.1 key over the token's first
+    two parts, as received, equals its signature bytes."""
+    parts = token_text.split(".")
+    if len(parts) != 3:
+        return False
+    signing_input = (parts[0] + "." + parts[1]).encode("ascii")
+    mac = hmac.new(A1_KEY, signing_input, hashlib.sha256).digest()
+    return hmac.compare_digest(mac, b64url_decode_strict(parts[2]) or b"")
+
+
 def build_random_cases(count=240):
     rng = random.Random(SEED)
     algs = ["HS256", "HS384", "RS256", "ES256", "PS256", "EdDSA", "none",
@@ -893,6 +867,18 @@ def main():
             ok = got == want
         if not ok:
             failures.append((name, got, want))
+
+    # The A.1 token's signature must still verify on the token the
+    # tool answers with: the answer keeps the received signing input
+    # (review 1 item 3). The key is the RFC 7515 A.1 HMAC key.
+    hmac_checked = 0
+    for (name, _, want), ans in zip(CASES, answers):
+        if not (name.startswith("A.1 accept") and isinstance(want, str)):
+            continue
+        got = decode_answer(ans)
+        hmac_checked += 1
+        if not (isinstance(got, str) and a1_signature_ok(got)):
+            failures.append((name + " (A.1 HMAC on the answer)", got, want))
 
     fixed = [c for c in CASES if c[0].startswith("A.")]
     fixed_fail = [f for f in failures if f[0].startswith("A.")]
@@ -989,6 +975,15 @@ def main():
                      " unknown name, a URI name, an empty list, a"
                      " string, null, and an escaped spelling; `crit` as"
                      " a claim name is not a header member and passes.")
+    lines_out.append("- Named change from review 1 item 3: an accepted"
+                     " token is answered with the token text as"
+                     " received, not a canonical reprint, so its"
+                     " signature still matches its signing input. The"
+                     " RFC 7515 A.1 HMAC (with the RFC's key) was"
+                     " checked on the tool's answer for %d A.1 accept"
+                     " cases, and on the A.1 input itself: %s."
+                     % (hmac_checked, "verifies" if a1_signature_ok(A1)
+                        else "DOES NOT VERIFY"))
     lines_out.append("- The none rule is the exact name `none`. An alg of"
                      " `None` is a different name and can be allowed.")
     lines_out.append("- Date claims are judged by value, not by spelling:"

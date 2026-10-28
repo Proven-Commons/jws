@@ -44,25 +44,47 @@ def joinSep (sep : Char) : List (List Char) → List Char
   | [p] => p
   | p :: q :: ps => p ++ sep :: joinSep sep (q :: ps)
 
-/-- A parsed token: the header value, the claims value, and the
-    signature bytes, returned unchanged. -/
+/-- A token. `headerSeg` and `payloadSeg` are the first two parts
+    as received, base64url text, kept exactly: with the dot between
+    them they are the JWS Signing Input (RFC 7515 section 5.2 step
+    8), which a signature verifier needs byte for byte. `header` and
+    `claims` are the JSON values those two parts decode to, and
+    `sig` is the signature bytes, returned unchanged. A token comes
+    from `parseToken` (a received text) or `makeToken` (values to
+    send); the theorems in `Spec.lean` say how each fills the
+    fields. -/
 structure Token where
+  headerSeg : List Char
+  payloadSeg : List Char
   header : Json
   claims : Json
   sig : List UInt8
 
-/-- Print a token: each JSON part in the canonical printer's
-    form, UTF-8 bytes, base64url without padding, the parts
-    joined by dots, the signature last. -/
+/-- Print a token: the two received parts as they are held, then
+    the signature bytes in base64url without padding, joined by
+    dots. For a parsed token this gives back the received text
+    exactly (`Spec.printToken_parse`); it never re-encodes the
+    JSON values. -/
 def printToken (t : Token) : List Char :=
-  joinSep '.' [Base64url.encode (Utf8.encode (Json.print t.header)),
-    Base64url.encode (Utf8.encode (Json.print t.claims)),
-    Base64url.encode t.sig]
+  joinSep '.' [t.headerSeg, t.payloadSeg, Base64url.encode t.sig]
+
+/-- The token for given header and claims values and signature
+    bytes, with each JSON part written in the canonical printer's
+    form (no spaces, pairs in the order held), as UTF-8, in
+    base64url without padding: the parts a sender using this
+    printer would send. -/
+def makeToken (header claims : Json) (sig : List UInt8) : Token :=
+  { headerSeg := Base64url.encode (Utf8.encode (Json.print header))
+    payloadSeg := Base64url.encode (Utf8.encode (Json.print claims))
+    header := header
+    claims := claims
+    sig := sig }
 
 /-- Parse the compact form. Framing first: exactly three parts.
     Each part must decode as strict base64url, the first two must
-    then decode as UTF-8 and parse as JSON. Object shape and the
-    claim rules are the checker's work, not the parser's. -/
+    then decode as UTF-8 and parse as JSON. The first two parts are
+    kept as received. Object shape and the claim rules are the
+    checker's work, not the parser's. -/
 def parseToken (cs : List Char) : Option Token :=
   match splitSep '.' cs with
   | [h, p, s] =>
@@ -71,7 +93,7 @@ def parseToken (cs : List Char) : Option Token :=
       match Utf8.decode hb, Utf8.decode pb with
       | some hc, some pc =>
         match Json.parse hc, Json.parse pc with
-        | some hv, some pv => some ⟨hv, pv, sb⟩
+        | some hv, some pv => some ⟨h, p, hv, pv, sb⟩
         | _, _ => none
       | _, _ => none
     | _, _, _ => none

@@ -24,13 +24,39 @@ open Jws
 The statements the slice stands on. Each one is the statement
 of the proved theorem of the same shape in `Proofs`. -/
 
-/-- Parsing the printed form of a token gives the token back,
-    for tokens whose JSON parts are well formed in the JSON
-    slice's sense. So a printer that wrote nothing, or wrote
-    something shorter, fails this statement. -/
-theorem Spec.parseToken_print (t : Token) (hh : Json.WF t.header)
-    (hc : Json.WF t.claims) :
-    parseToken (printToken t) = some t := sorry
+/-- Printing a parsed token gives the received text back, byte
+    for byte. The two first parts are kept as received, so the
+    JWS Signing Input a verifier needs is never rebuilt from the
+    JSON values; the signature part is the base64url of the
+    signature bytes. The command line tool answers an accepted
+    token with this print. -/
+theorem Spec.printToken_parse (s : List Char) (t : Token)
+    (h : parseToken s = some t) :
+    printToken t = s := sorry
+
+/-- What the parser reads: the received text splits at its dots
+    into exactly three parts, the kept header part, the kept
+    payload part, and the base64url of the signature bytes; the
+    header and claims values are what the two kept parts decode
+    to through strict base64url, strict UTF-8, and the JSON
+    parser. So a parser that kept the right parts but made up the
+    values fails this statement. -/
+theorem Spec.parseToken_reads (s : List Char) (t : Token)
+    (h : parseToken s = some t) :
+    splitSep '.' s = [t.headerSeg, t.payloadSeg, Base64url.encode t.sig] ∧
+    (∃ hb hcs, Base64url.decode t.headerSeg = some hb ∧
+      Utf8.decode hb = some hcs ∧ Json.parse hcs = some t.header) ∧
+    (∃ pb pcs, Base64url.decode t.payloadSeg = some pb ∧
+      Utf8.decode pb = some pcs ∧ Json.parse pcs = some t.claims) := sorry
+
+/-- Parsing the printed form of a token made from header and
+    claims values (each written in the JSON printer's canonical
+    form) gives that token back, for values that are well formed
+    in the JSON slice's sense. So a printer that wrote nothing, or
+    wrote something shorter, fails this statement. -/
+theorem Spec.parseToken_print (h c : Json.Json) (sig : List UInt8)
+    (hh : Json.WF h) (hc : Json.WF c) :
+    parseToken (printToken (makeToken h c sig)) = some (makeToken h c sig) := sorry
 
 /-- Decoding the base64url encoding of any bytes gives the
     bytes back. -/

@@ -15,10 +15,24 @@ import Proofs.Check
 
 open Jws
 
-theorem Spec.parseToken_print (t : Token) (hh : Json.WF t.header)
-    (hc : Json.WF t.claims) :
-    parseToken (printToken t) = some t :=
-  Jws.Proofs.parseToken_print t hh hc
+theorem Spec.printToken_parse (s : List Char) (t : Token)
+    (h : parseToken s = some t) :
+    printToken t = s :=
+  Jws.Proofs.printToken_parse s t h
+
+theorem Spec.parseToken_reads (s : List Char) (t : Token)
+    (h : parseToken s = some t) :
+    splitSep '.' s = [t.headerSeg, t.payloadSeg, Base64url.encode t.sig] ∧
+    (∃ hb hcs, Base64url.decode t.headerSeg = some hb ∧
+      Utf8.decode hb = some hcs ∧ Json.parse hcs = some t.header) ∧
+    (∃ pb pcs, Base64url.decode t.payloadSeg = some pb ∧
+      Utf8.decode pb = some pcs ∧ Json.parse pcs = some t.claims) :=
+  Jws.Proofs.parseToken_reads s t h
+
+theorem Spec.parseToken_print (h c : Json.Json) (sig : List UInt8)
+    (hh : Json.WF h) (hc : Json.WF c) :
+    parseToken (printToken (makeToken h c sig)) = some (makeToken h c sig) :=
+  Jws.Proofs.parseToken_print h c sig hh hc
 
 theorem Spec.decode_encode (bs : List UInt8) :
     Base64url.decode (Base64url.encode bs) = some bs :=

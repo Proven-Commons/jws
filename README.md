@@ -4,8 +4,10 @@ Status: in progress
 
 A parser and checker for the JWS compact form (RFC 7515)
 in Lean. The parser reads the three base64url parts,
-decodes the header and payload as JSON, and holds the
-signature bytes unchanged. The checker runs the shape and
+keeps the first two exactly as received (they are the
+signing input a signature verifier needs), decodes the
+header and payload as JSON, and holds the signature bytes
+unchanged. The checker runs the shape and
 claims rules of `SPEC.md`: the algorithm against a caller
 allowlist, the required claims, and the `exp`, `nbf`,
 `iss`, and `aud` claims against a context the caller
@@ -40,7 +42,7 @@ decimal character codes: the token text, the current time
 (or empty for no time comparisons), the allowed
 algorithms, the required claims, the expected issuer, and
 the expected audience. It answers `ok:` and the codes of
-the canonical reprinted token when the token is accepted,
+the token text as received when the token is accepted,
 `none` when it is not, and `error` when the request itself
 is malformed. `SPEC.md` states the field format in full.
 
@@ -75,7 +77,9 @@ where they end in `sorry`) and proved in
 
 | Claim | Theorem |
 |-------|---------|
-| Parsing the printed form of a token gives the token back, for tokens whose JSON parts are well formed in the json slice's sense. | `Spec.parseToken_print` |
+| Printing a parsed token gives back the text that was parsed, byte for byte. The command line tool answers an accepted token with this print, so the answer is the input and its signature still matches its signing input. | `Spec.printToken_parse` |
+| A parsed token holds the first two parts of the text as received, the header and claims values those parts decode to (strict base64url, strict UTF-8, then the JSON parser), and signature bytes whose base64url is the third part; the text has exactly those three parts. | `Spec.parseToken_reads` |
+| Parsing the printed form of a token made with `Jws.makeToken` from header and claims values gives that token back, for values that are well formed in the json slice's sense. | `Spec.parseToken_print` |
 | Decoding the base64url encoding of any bytes gives the bytes back. | `Spec.decode_encode` |
 | The RFC 7515 A.1 token is accepted when HS256 is allowed and the issuer must be `joe`, with no current time supplied. | `Spec.accepts_rfc_a1` |
 | A hand built token with header `{"alg":"HS256"}`, claims `{"iss":"joe","exp":2000000000}`, and a 32 byte signature is accepted under HS256 allowed, current time 1500000000, and issuer `joe`. | `Spec.accepts_hand_built` |
@@ -92,10 +96,14 @@ where they end in `sorry`) and proved in
 | When the check accepts a token, under any context, its header is a JSON object with no `crit` member. | `Spec.accept_no_crit` |
 | The token `eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","b64":false,"crit":["b64"]}`, parses and is refused under every context. | `Spec.rejects_crit_b64` |
 
-The token round trip rests on the proofs in
-`Proofs/Token.lean`, where it is
-`Jws.Proofs.parseToken_print`: a chain of the three round
-trips under it, the JSON text round trip
+The token theorems rest on the proofs in
+`Proofs/Token.lean`. The print of a parsed token is the
+received text because the token keeps the first two parts
+as received and the strict base64url decoder accepts a
+signature part only when it is the canonical encoding of
+its bytes (`Jws.Base64url.Proofs.encode_decode`).
+`Jws.Proofs.parseToken_print` is a chain of the three
+round trips under it, the JSON text round trip
 (`Json.Proofs.parse_print`, carried in with the JSON
 code), the UTF-8 round trip
 (`Jws.Utf8.Proofs.decode_encode`, in `Proofs/Utf8.lean`),
@@ -109,11 +117,9 @@ one a named fixed case in the test harness, run through
 the same `Jws.parseToken` and `Jws.accept` the command
 line tool calls.
 
-The token and UTF-8 round trips check against the
-standard three axioms only (`propext`, `Classical.choice`,
-`Quot.sound`), and the base64url round trips against
-`propext` and `Quot.sound` only, which a reader can
-confirm with `#print axioms` on each name.
+Every theorem above checks against the standard three
+axioms only (`propext`, `Classical.choice`, `Quot.sound`):
+`lake comparator --paranoid` allows no other.
 
 The command line tool in `Main.lean` calls
 `Jws.parseToken`, `Jws.accept`, and `Jws.printToken`
@@ -134,10 +140,17 @@ directly, the same functions the theorems are about.
   keys, signing inputs, or any algorithm. A caller that
   reads claims from this slice without verifying the
   signature has not checked authenticity.
-- The reverse printing direction at the token level:
-  printing a parsed token is how the round trip is
-  stated. The base64url and JSON layers each prove their
-  own reverse directions.
+- That the JSON printer gives back the text it parsed.
+  It does not (it writes a canonical form, without the
+  whitespace a sender may have used), and the json
+  slice proves only the parse-after-print direction.
+  The token therefore keeps its received parts, and
+  `Spec.parseToken_print` is stated for tokens made from
+  values with `Jws.makeToken`.
+- That a token value built by hand, not by `parseToken`
+  or `makeToken`, has parts and values that match: the
+  `Token` structure does not enforce it, and the theorems
+  cover only those two ways of making one.
 - Anything about the numeric meaning of claims beyond
   the exact decimal reading the checker itself uses
   (whole seconds, comparisons). The reading code is
