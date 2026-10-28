@@ -12,10 +12,10 @@ Verdicts are always the oracle's (SPEC.md rules reimplemented in the harness). P
 
 ## Counts
 
-- Total check and request inputs: 425
-- Agreements with the oracle: 425
+- Total check and request inputs: 426
+- Agreements with the oracle: 426
 - Failures: 0
-- Of the verdict cases: 55 accepted, 360 rejected, 10 malformed requests answered error
+- Of the verdict cases: 53 accepted, 363 rejected, 10 malformed requests answered error
 
 ## RFC 7515 fixed cases
 
@@ -29,6 +29,7 @@ The A.5 example is the RFC's unsecured (alg none) compact example; in the final 
 - [ok] A.1 accept (required claims present)
 - [ok] A.1 reject (required claim missing)
 - [ok] A.1 accept (no time checks, issuer checked)
+- [ok] A.1 reject (signature part emptied, otherwise passing context)
 - [ok] A.2 accept (RS256 allowed, now before exp, issuer joe)
 - [ok] A.2 reject (alg not allowed)
 - [ok] A.3 accept (ES256 allowed, now before exp)
@@ -39,7 +40,7 @@ The A.5 example is the RFC's unsecured (alg none) compact example; in the final 
 
 ## Named differences and pinned readings
 
-- An empty signature part is well formed base64url, so a token with an empty third part can pass the checks. Only alg none itself is turned away, not the empty signature.
+- Named change from the 2026-10-27 review: an empty signature part is now always turned away (SPEC rule 2). RFC 7515 never produces an empty signature for a signing algorithm, and alg none is turned away on its own, so the none case never reaches acceptance. The earlier reading accepted an empty signature part for a signing algorithm. The fixed case that pinned that reading now expects rejection, a new fixed case empties the A.1 token's signature part under an otherwise passing context and expects rejection, and generated corpus tokens with empty signature parts follow the same new rule in the oracle.
 - Claim and header name lookup reads the first copy of a repeated name (the JSON code's List.lookup order). The duplicate iss and alg cases pin this.
 - The none rule is the exact name `none`. An alg of `None` is a different name and can be allowed.
 - Date claims are judged by value, not by spelling: `2.0e9` and `20000000000e-1` are the whole number 2000000000, and `1e999999999` compares without ever being written out.

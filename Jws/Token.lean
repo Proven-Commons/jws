@@ -257,6 +257,7 @@ def accept (t : Token) (ctx : Context) : Bool :=
       match lookup "alg".toList t.header with
       | some (.str alg) =>
         alg != "none".toList &&
+        !t.sig.isEmpty &&
         ctx.allow.contains alg &&
         ctx.required.all (fun n => (lookup n t.claims).isSome) &&
         (match dateClaim "exp".toList t.claims with

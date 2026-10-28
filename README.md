@@ -35,7 +35,7 @@ The two base64url round trips check against `propext` and `Quot.sound` only. The
 
 Two readings worth naming, both stated in `SPEC.md` and pinned by tests:
 
-- An empty signature part is well formed, so it can pass the checks. Only the algorithm name `none` is turned away outright, together with any context whose allowlist names `none`.
+- An empty signature part is well formed base64url, but the checker turns it away: RFC 7515 never produces an empty signature for a signing algorithm, and the algorithm name `none` is turned away outright, together with any context whose allowlist names `none`, so the none case never reaches acceptance.
 - When a JSON object repeats a name, lookup reads the first copy, as the JSON code's lookup does.
 
 ## What you must trust

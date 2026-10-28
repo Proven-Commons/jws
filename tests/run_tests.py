@@ -7,7 +7,9 @@ Three parts, matching the slice plan:
    A.2 RS256, A.3 ES256, A.5 the unsecured none example; the
    RFC 7519 section 3.1 example token is byte for byte the A.1
    token, so the A.1 cases cover it), each with contexts that
-   accept and contexts that reject.
+   accept and contexts that reject. The A.1 token with its
+   signature part emptied, under an otherwise passing context,
+   is a fixed reject case.
 
 2. Differential: tokens built with PyJWT (in the work dir venv)
    when it is present, plus hand built tokens, each run under
@@ -238,6 +240,11 @@ def oracle_check(token_text, now, allow, required, issuer, audience):
     raws = [b64url_decode_strict(p) for p in parts]
     if any(r is None for r in raws):
         return None
+    if len(raws[2]) == 0:
+        # An empty signature part is always turned away (SPEC
+        # rule 2): no signing algorithm produces one, and alg
+        # none is turned away on its own below.
+        return None
     try:
         header_text = raws[0].decode("utf-8")
         claims_text = raws[1].decode("utf-8")
@@ -385,6 +392,10 @@ add_check("A.1 reject (required claim missing)", A1, 1300819000,
           ["HS256"], ["sub"], None, None)
 add_check("A.1 accept (no time checks, issuer checked)", A1, None,
           ["HS256"], [], "joe", None)
+A1_EMPTY_SIG = A1.rsplit(".", 1)[0] + "."
+add_check("A.1 reject (signature part emptied, otherwise passing"
+          " context)", A1_EMPTY_SIG, 1300819000, ["HS256"], [],
+          "joe", None)
 add_check("A.2 accept (RS256 allowed, now before exp, issuer joe)",
           A2, 1300819000, ["RS256"], [], "joe", None)
 add_check("A.2 reject (alg not allowed)", A2, 1300819000, ["HS256"], [],
@@ -454,7 +465,9 @@ add_check("mutation: signature part length 1 mod 4",
 add_check("mutation: signature unused bits set",
           parts[0] + "." + parts[1] + ".AR",
           NOW, ["HS256"], [], None, None)
-add_check("empty signature part is well formed (accepted)",
+add_check("empty signature part (reject; this case pinned the"
+          " earlier reading as an accept, flipped by the"
+          " 2026-10-27 review change)",
           parts[0] + "." + parts[1] + ".",
           NOW, ["HS256"], [], "joe", None)
 add_check("one byte signature (accepted)",
@@ -877,10 +890,19 @@ def main():
     lines_out.append("")
     lines_out.append("## Named differences and pinned readings")
     lines_out.append("")
-    lines_out.append("- An empty signature part is well formed base64url,"
-                     " so a token with an empty third part can pass the"
-                     " checks. Only alg none itself is turned away, not"
-                     " the empty signature.")
+    lines_out.append("- Named change from the 2026-10-27 review: an"
+                     " empty signature part is now always turned away"
+                     " (SPEC rule 2). RFC 7515 never produces an empty"
+                     " signature for a signing algorithm, and alg none"
+                     " is turned away on its own, so the none case"
+                     " never reaches acceptance. The earlier reading"
+                     " accepted an empty signature part for a signing"
+                     " algorithm. The fixed case that pinned that"
+                     " reading now expects rejection, a new fixed case"
+                     " empties the A.1 token's signature part under an"
+                     " otherwise passing context and expects rejection,"
+                     " and generated corpus tokens with empty signature"
+                     " parts follow the same new rule in the oracle.")
     lines_out.append("- Claim and header name lookup reads the first copy"
                      " of a repeated name (the JSON code's List.lookup"
                      " order). The duplicate iss and alg cases pin this.")
