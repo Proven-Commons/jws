@@ -90,6 +90,7 @@ where they end in `sorry`) and proved in
 | The A.1 token is refused when its algorithm, HS256, is outside the allowlist (RS256 alone). | `Spec.rejects_alg_outside_allowlist` |
 | A token whose first part carries a padding character does not parse: `=` is not in the base64url alphabet. | `Spec.rejects_part_not_base64url` |
 | A token whose header part decodes to a JSON array, not an object, is refused. | `Spec.rejects_header_not_object` |
+| When the check accepts a token, under any context: the allowlist does not name `none`; the signature is not empty; the header and the claims are JSON objects with no repeated member name; the header has no `crit` member; the header's `alg` is a string other than `none`, on the allowlist; every required claim is present; `exp`, `nbf` and `iat`, when present, are JSON numbers, and when a current time is given it is before `exp` and not before `nbf`, as the checker's exact decimal comparison (`Jws.NumVal.cmp` on `Jws.numVal`) orders them; `iss`, when present, is a string; `aud`, when present, is a string or an array of strings; when an issuer is expected, `iss` is that string; when no audience is expected there is no `aud`; and when one is, `aud` is that string or an array holding it. | `Spec.accept_sound` |
 | When the check accepts a token, under any context, its header and its claims are JSON objects and neither repeats a member name. | `Spec.accept_names_unique` |
 | The token `eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","alg":"none"}`, parses and is refused under every context. | `Spec.rejects_duplicate_alg` |
 | The token whose claims are `{"iss":"joe","exp":2000000000,"iss":"evil"}` (header `{"alg":"HS256"}`, signature bytes 01 02 03) parses and is refused under every context. | `Spec.rejects_duplicate_iss` |
@@ -134,11 +135,12 @@ directly, the same functions the theorems are about.
 - Repeated names inside objects nested in the header or
   the claims: the check does not look for them (see
   below), and no theorem covers them.
-- That the checker accepts exactly the tokens `SPEC.md`
-  says it should, beyond the single inputs the theorems
-  above pin. The acceptance rules live in one function
-  (`Jws.accept`), and their completeness rests on the
-  tests: the RFC examples, the mutation cases, and the
+- That the checker accepts every token `SPEC.md` says it
+  should, beyond the single inputs the theorems above
+  pin. `Spec.accept_sound` proves the other direction,
+  that an accepted token meets every rule; that a token
+  meeting every rule is accepted (completeness) rests on
+  the tests: the RFC examples, the mutation cases, and the
   differential corpus against the harness oracle.
 - Signature verification, as stated above: nothing about
   keys, signing inputs, or any algorithm. A caller that

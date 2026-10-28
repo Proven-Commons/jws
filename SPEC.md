@@ -240,6 +240,10 @@ theorems are single inputs, one for each named fixed case
 in the test harness, run through the same `Jws.parseToken`
 and `Jws.accept` the command line tool calls; the tests in
 `tests/` cover each rule on many more inputs.
+`Spec.accept_sound` covers every token and every context in
+the one direction: what acceptance implies. That every token
+meeting the rules is accepted is shown only by the single
+input theorems and the tests.
 
 | Property | Theorem |
 |----------|---------|
@@ -256,6 +260,7 @@ and `Jws.accept` the command line tool calls; the tests in
 | A token whose algorithm is outside the allowlist is refused (rule 7) | `Spec.rejects_alg_outside_allowlist` |
 | A token with a part that is not strict base64url does not parse | `Spec.rejects_part_not_base64url` |
 | A token whose header is not a JSON object is refused (rule 3) | `Spec.rejects_header_not_object` |
+| An accepted token meets rules 2 to 18, the date comparisons as `Jws.NumVal.cmp` makes them | `Spec.accept_sound` |
 | An accepted token's header and claims are objects that repeat no member name (rules 3, 4, 17) | `Spec.accept_names_unique` |
 | The token with header `{"alg":"HS256","alg":"none"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_alg` |
 | The token with claims `{"iss":"joe","exp":2000000000,"iss":"evil"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_iss` |

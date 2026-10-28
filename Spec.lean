@@ -305,3 +305,46 @@ theorem Spec.rejects_fractional_exp_after :
         { allow := ["HS256".toList], now := some 2000000001, required := [],
           issuer := none, audience := none })
       = some false := sorry
+
+/-! ## What acceptance means
+
+The plan's main claim: a token is accepted only when its header
+`alg` is on the allowlist and its registered claims pass the
+checks. One statement collects every rule the check applies. -/
+
+/-- When the check accepts a token, under any context: the
+    allowlist does not name `none`; the signature is not empty;
+    the header and the claims are JSON objects with no repeated
+    member name; the header has no `crit` member; the header's
+    `alg` is a string other than `none` that is on the allowlist;
+    every required claim is present; `exp`, `nbf` and `iat`, when
+    present, are numbers the checker reads exactly, with the
+    current time before `exp` and not before `nbf` when a time is
+    given; `iss`, when present, is a string; `aud`, when present,
+    is a string or an array of strings; the issuer is the expected
+    one when one is given; and `aud` is absent when no audience is
+    expected, or names the expected audience when one is. A
+    program that accepts nothing meets this statement; the
+    accepting statements above are what rule it out. -/
+theorem Spec.accept_sound (t : Token) (ctx : Context)
+    (h : accept t ctx = true) :
+    "none".toList ∉ ctx.allow ∧ t.sig ≠ [] ∧
+    ∃ hkvs ckvs, t.header = .obj hkvs ∧ t.claims = .obj ckvs ∧
+      (hkvs.map Prod.fst).Nodup ∧ (ckvs.map Prod.fst).Nodup ∧
+      "crit".toList ∉ hkvs.map Prod.fst ∧
+      (∃ alg, ("alg".toList, Json.Json.str alg) ∈ hkvs ∧
+        alg ≠ "none".toList ∧ alg ∈ ctx.allow) ∧
+      (∀ n ∈ ctx.required, n ∈ ckvs.map Prod.fst) ∧
+      (∀ v, ("exp".toList, v) ∈ ckvs → ∃ cs e, v = .num cs ∧ numVal cs = some e ∧
+        ∀ now, ctx.now = some now → NumVal.cmp (NumVal.ofInt now) e = .lt) ∧
+      (∀ v, ("nbf".toList, v) ∈ ckvs → ∃ cs e, v = .num cs ∧ numVal cs = some e ∧
+        ∀ now, ctx.now = some now → NumVal.cmp (NumVal.ofInt now) e ≠ .lt) ∧
+      (∀ v, ("iat".toList, v) ∈ ckvs → ∃ cs e, v = .num cs ∧ numVal cs = some e) ∧
+      (∀ v, ("iss".toList, v) ∈ ckvs → ∃ s, v = .str s) ∧
+      (∀ v, ("aud".toList, v) ∈ ckvs →
+        (∃ s, v = .str s) ∨ ∃ vs, v = .arr vs ∧ ∀ x ∈ vs, ∃ s, x = .str s) ∧
+      (∀ i, ctx.issuer = some i → ("iss".toList, Json.Json.str i) ∈ ckvs) ∧
+      (ctx.audience = none → "aud".toList ∉ ckvs.map Prod.fst) ∧
+      (∀ a, ctx.audience = some a →
+        ("aud".toList, Json.Json.str a) ∈ ckvs ∨
+        ∃ vs, ("aud".toList, Json.Json.arr vs) ∈ ckvs ∧ Json.Json.str a ∈ vs) := sorry

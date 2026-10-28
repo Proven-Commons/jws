@@ -193,3 +193,27 @@ theorem Spec.rejects_fractional_exp_after :
           issuer := none, audience := none })
       = some false := by
   decide +kernel
+
+theorem Spec.accept_sound (t : Token) (ctx : Context)
+    (h : accept t ctx = true) :
+    "none".toList ∉ ctx.allow ∧ t.sig ≠ [] ∧
+    ∃ hkvs ckvs, t.header = .obj hkvs ∧ t.claims = .obj ckvs ∧
+      (hkvs.map Prod.fst).Nodup ∧ (ckvs.map Prod.fst).Nodup ∧
+      "crit".toList ∉ hkvs.map Prod.fst ∧
+      (∃ alg, ("alg".toList, Json.Json.str alg) ∈ hkvs ∧
+        alg ≠ "none".toList ∧ alg ∈ ctx.allow) ∧
+      (∀ n ∈ ctx.required, n ∈ ckvs.map Prod.fst) ∧
+      (∀ v, ("exp".toList, v) ∈ ckvs → ∃ cs e, v = .num cs ∧ numVal cs = some e ∧
+        ∀ now, ctx.now = some now → NumVal.cmp (NumVal.ofInt now) e = .lt) ∧
+      (∀ v, ("nbf".toList, v) ∈ ckvs → ∃ cs e, v = .num cs ∧ numVal cs = some e ∧
+        ∀ now, ctx.now = some now → NumVal.cmp (NumVal.ofInt now) e ≠ .lt) ∧
+      (∀ v, ("iat".toList, v) ∈ ckvs → ∃ cs e, v = .num cs ∧ numVal cs = some e) ∧
+      (∀ v, ("iss".toList, v) ∈ ckvs → ∃ s, v = .str s) ∧
+      (∀ v, ("aud".toList, v) ∈ ckvs →
+        (∃ s, v = .str s) ∨ ∃ vs, v = .arr vs ∧ ∀ x ∈ vs, ∃ s, x = .str s) ∧
+      (∀ i, ctx.issuer = some i → ("iss".toList, Json.Json.str i) ∈ ckvs) ∧
+      (ctx.audience = none → "aud".toList ∉ ckvs.map Prod.fst) ∧
+      (∀ a, ctx.audience = some a →
+        ("aud".toList, Json.Json.str a) ∈ ckvs ∨
+        ∃ vs, ("aud".toList, Json.Json.arr vs) ∈ ckvs ∧ Json.Json.str a ∈ vs) :=
+  Jws.Proofs.accept_sound t ctx h
