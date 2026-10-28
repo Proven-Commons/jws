@@ -4,7 +4,7 @@ Written by `python3 tests/run_tests.py`, which drives the built tool `.lake/buil
 
 - Oracle: the SPEC.md rules reimplemented in tests/run_tests.py (Python 3.13), with tokens and decodes from PyJWT 2.15.1 (cryptography 46.0.3)
 - Seed: 20261026
-- Inputs: 743
+- Inputs: 752
 - Failures: 0
 
 ## The oracle and PyJWT
@@ -27,10 +27,10 @@ PyJWT's decode was compared with the oracle's parse on 20 tokens: 20 agreements,
 
 ## Counts
 
-- Total check and request inputs: 743
-- Of these: 20 PyJWT-built tokens under 5 contexts each, 36 PyJWT verdict probes, 240 random corpus cases (seed 20261026), 240 shape corpus cases (seed 20261027), and 127 fixed and mutation cases
-- Agreements with the oracle: 743
-- Of the verdict cases: 105 accepted, 628 rejected, 10 malformed requests answered error
+- Total check and request inputs: 752
+- Of these: 20 PyJWT-built tokens under 5 contexts each, 36 PyJWT verdict probes, 240 random corpus cases (seed 20261026), 240 shape corpus cases (seed 20261027), and 136 fixed and mutation cases
+- Agreements with the oracle: 752
+- Of the verdict cases: 105 accepted, 630 rejected, 17 malformed requests answered error
 
 ## RFC 7515 fixed cases
 
@@ -63,6 +63,7 @@ The A.5 example is the RFC's unsecured (alg none) compact example; in the final 
 - Named change from review 1 item 6: with no expected audience, a token that carries `aud` is turned away (SPEC rule 16). RFC 7519 section 4.1.3 asks a reader that does not identify itself with a value in `aud` to reject the token. PyJWT reads it the same way; some other libraries accept such a token. Generated tokens with `aud` under a context with no audience now expect refusal in the oracle.
 - From review 1 item 9: the allowlist does not stop key and algorithm confusion. The page warns that a caller's signature checker must use each key with exactly one algorithm (RFC 8725 section 3.1) and that an allowlist should name one family. The generated contexts here mix families only as test data for the allowlist rule.
 - The none rule is the exact name `none`. An alg of `None` is a different name and can be allowed.
+- Named change from the independent check of the carried branch: a name in the allowlist or required claims field is never empty, so a leading, trailing or doubled comma makes the request malformed and the tool answers `error`. Before, the allowlist text `HS256,` put the empty name on the allowlist, and a header whose `alg` is the empty string passed. Fixed malformed cases pin each comma shape, and the oracle reads both fields as the tool does.
 - Named change from review 1 item 7: `exp`, `nbf` and `iat` may be non-integers (RFC 7519 section 2) and are compared exactly with the current time (SPEC rule 9). The earlier reading turned every fractional date away; the three fixed cases that pinned it now expect acceptance, and new cases cover fractions a millionth either side of now, equality, `nbf`, and exponents of -999999999.
 - Date claims are judged by value, not by spelling: `2.0e9` and `20000000000e-1` are the number 2000000000, and `1e999999999` compares without ever being written out.
 - PyJWT decode differences (its parser against the oracle's on well formed tokens): 0.

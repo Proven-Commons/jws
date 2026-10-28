@@ -15,6 +15,8 @@ import Jws
            for no time comparisons. Field 3: the allowed
            algorithms, names separated by commas inside the
            field text. Field 4: the required claims, same style.
+           A name in field 3 or 4 is never empty: a leading,
+           trailing or doubled comma makes the request malformed.
            Field 5: the expected issuer, or empty. Field 6: the
            expected audience, or empty.
 
@@ -61,9 +63,16 @@ def chomp (line : String) : String :=
   else line
 
 /-- Split a field text into names at its commas. An empty field
-    names nothing. -/
-def names (cs : List Char) : List (List Char) :=
-  if cs.isEmpty then [] else Jws.splitSep ',' cs
+    names nothing. A name may not be empty, so a field with a
+    leading, trailing or doubled comma is malformed (`none`): the
+    text `HS256,` would otherwise put the empty name on the
+    allowlist, and a header whose `alg` is the empty string would
+    pass. -/
+def names (cs : List Char) : Option (List (List Char)) :=
+  if cs.isEmpty then some []
+  else
+    let ns := Jws.splitSep ',' cs
+    if ns.any (·.isEmpty) then none else some ns
 
 /-- Read the current time field: empty for no time comparisons,
     else an optional minus sign and at most 19 digits. -/
@@ -85,13 +94,12 @@ def answerCheck (fields : List (List Nat)) : Option String :=
   | [tf, nf, af, rf, isf, auf] =>
     match toChars tf, toChars nf, toChars af, toChars rf, toChars isf, toChars auf with
     | some t, some nowCs, some allowCs, some reqCs, some issCs, some audCs =>
-      match readNow nowCs with
-      | none => none
-      | some now =>
+      match readNow nowCs, names allowCs, names reqCs with
+      | some now, some allow, some required =>
         let ctx : Jws.Context :=
-          { allow := names allowCs
+          { allow := allow
             now := now
-            required := names reqCs
+            required := required
             issuer := if issCs.isEmpty then none else some issCs
             audience := if audCs.isEmpty then none else some audCs }
         match Jws.parseToken t with
@@ -99,6 +107,7 @@ def answerCheck (fields : List (List Nat)) : Option String :=
         | some tok =>
           some (if Jws.accept tok ctx then "ok:" ++ showCodes (Jws.printToken tok)
                 else "none")
+      | _, _, _ => none
     | _, _, _, _, _, _ => none
   | _ => none
 

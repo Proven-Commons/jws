@@ -56,10 +56,13 @@ semicolons. Each field is text written as comma separated
 decimal character codes: the token text, the current time
 (or empty for no time comparisons), the allowed
 algorithms, the required claims, the expected issuer, and
-the expected audience. It answers `ok:` and the codes of
-the token text as received when the token is accepted,
-`none` when it is not, and `error` when the request itself
-is malformed. `SPEC.md` states the field format in full.
+the expected audience. The allowlist and the required
+claims are names joined by commas, and no name may be
+empty: `HS256,` is a malformed field. It answers `ok:` and
+the codes of the token text as received when the token is
+accepted, `none` when it is not, and `error` when the
+request itself is malformed. `SPEC.md` states the field
+format in full.
 
 ```
 lake build

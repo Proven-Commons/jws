@@ -250,6 +250,11 @@ separated decimal form as the payload:
 - Field 5: the expected issuer. Empty means none.
 - Field 6: the expected audience. Empty means none.
 
+A name in field 3 or field 4 is never empty: a field with a
+leading, trailing or doubled comma, such as `HS256,`, is
+malformed. So no request puts the empty name on the allowlist,
+where a header whose `alg` is the empty string would meet rule 7.
+
 The answer is `ok:` followed by the character codes of the
 token text as received (`Jws.printToken` of the parsed token,
 which `Spec.printToken_parse` proves equal to the text parsed)
@@ -258,7 +263,7 @@ when it is not accepted, and `error` when the request itself
 is malformed (wrong field count, a field that is not a code
 list, a code that is not a Unicode scalar value, a current
 time field that is not an optional minus sign plus at most 19
-digits, an unknown operation).
+digits, an empty name in field 3 or 4, an unknown operation).
 
 ## Properties and their theorems
 

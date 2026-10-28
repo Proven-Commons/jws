@@ -24,7 +24,9 @@ Python. The inputs come in six groups:
    repeated names, crit, and more. Several of these are the
    single inputs the theorems in Spec.lean pin, by name.
 
-3. Malformed requests that must be answered with `error`.
+3. Malformed requests that must be answered with `error`,
+   among them an empty name (a leading, trailing or doubled
+   comma) in the allowlist or required claims field.
 
 4. PyJWT-built tokens, read from the committed corpus
    tests/pyjwt_corpus.json (which tests/make_pyjwt_corpus.py
@@ -348,8 +350,27 @@ def decode_answer(ans):
 CASES = []
 
 
+def read_names(text):
+    """How the tool reads field 3 (the allowlist) and field 4 (the
+    required claims): an empty field names nothing; otherwise the
+    names between the commas, none of them empty. A leading,
+    trailing or doubled comma makes the request malformed (None)."""
+    if text == "":
+        return []
+    ns = text.split(",")
+    if any(n == "" for n in ns):
+        return None
+    return ns
+
+
 def add_check(name, token, now, allow, required, issuer, audience):
-    want = oracle_check(token, now, allow, required, issuer, audience)
+    allow_names = read_names(",".join(allow))
+    required_names = read_names(",".join(required))
+    if allow_names is None or required_names is None:
+        want = "error"
+    else:
+        want = oracle_check(token, now, allow_names, required_names, issuer,
+                            audience)
     CASES.append((name, check_request(token, now, allow, required, issuer,
                                        audience), want))
 
@@ -780,6 +801,31 @@ add_raw("malformed: now field over 19 digits",
                              codes_of("HS256"), "", "", ""]), "error")
 add_raw("malformed: empty line", "", "error")
 add_raw("malformed: check with no payload", "check", "error")
+
+# An empty name in the allowlist or the required claims field is a
+# malformed request. Before, the allowlist text "HS256," put the
+# empty name on the allowlist, and a header whose alg is the empty
+# string passed (found by the independent check of this branch).
+EMPTY_ALG = claims_token(b'{}', header_bytes=b'{"alg":""}')
+for label, allow_text, req_text in [
+        ("allowlist with a trailing comma, alg the empty string",
+         "HS256,", ""),
+        ("allowlist with a leading comma", ",HS256", ""),
+        ("allowlist with a doubled comma", "HS256,,RS256", ""),
+        ("allowlist that is one comma", ",", ""),
+        ("required claims with a trailing comma", "HS256", "exp,"),
+        ("required claims with a doubled comma", "HS256", "iss,,exp")]:
+    add_raw("malformed: " + label,
+            "check " + ";".join([codes_of(EMPTY_ALG), "",
+                                 codes_of(allow_text), codes_of(req_text),
+                                 "", ""]), "error")
+add_check("alg the empty string, allowlist HS256,RS256: refused",
+          EMPTY_ALG, None, ["HS256", "RS256"], [], None, None)
+add_check("alg the empty string, empty allowlist: refused",
+          EMPTY_ALG, None, [], [], None, None)
+add_check("malformed: allowlist naming HS256 and the empty name, read"
+          " as the tool reads it", BASE, NOW, ["HS256", ""], [], None,
+          None)
 add_check("now field with a minus sign and digits (read as negative)",
           claims_token(b'{"exp":100,"nbf":-50}'),
           -5, ["HS256"], [], None, None)
@@ -1329,6 +1375,15 @@ def main():
                      " data for the allowlist rule.")
     lines_out.append("- The none rule is the exact name `none`. An alg of"
                      " `None` is a different name and can be allowed.")
+    lines_out.append("- Named change from the independent check of the"
+                     " carried branch: a name in the allowlist or required"
+                     " claims field is never empty, so a leading, trailing"
+                     " or doubled comma makes the request malformed and the"
+                     " tool answers `error`. Before, the allowlist text"
+                     " `HS256,` put the empty name on the allowlist, and a"
+                     " header whose `alg` is the empty string passed. Fixed"
+                     " malformed cases pin each comma shape, and the oracle"
+                     " reads both fields as the tool does.")
     lines_out.append("- Named change from review 1 item 7: `exp`, `nbf`"
                      " and `iat` may be non-integers (RFC 7519 section 2)"
                      " and are compared exactly with the current time"
