@@ -4,7 +4,7 @@ Written by `python3 tests/run_tests.py`, which drives the built tool `.lake/buil
 
 - Oracle: the SPEC.md rules reimplemented in tests/run_tests.py (Python 3.13), with tokens and decodes from PyJWT 2.15.1 (cryptography 46.0.3)
 - Seed: 20261026
-- Inputs: 467
+- Inputs: 743
 - Failures: 0
 
 ## The oracle and PyJWT
@@ -12,11 +12,25 @@ Written by `python3 tests/run_tests.py`, which drives the built tool `.lake/buil
 Verdicts come from the oracle, which reimplements the SPEC.md rules in Python. PyJWT 2.15.1 built 20 tokens (HS256, RS256, ES256, and none algorithms), kept in tests/pyjwt_corpus.json with PyJWT's own unverified decode of each. The harness reads that file, so it needs no PyJWT to run; to rebuild the corpus, make a virtual environment from tests/requirements.txt and run tests/make_pyjwt_corpus.py (README, How to run it).
 PyJWT's decode was compared with the oracle's parse on 20 tokens: 20 agreements, 0 differences.
 
+## PyJWT verdicts on the probe tokens
+
+36 HS256 probe tokens, signed with a known key, were run through PyJWT's `jwt.decode` (with that key and each probe's algorithms, issuer, audience and required claims, at the time 1793208734) when the corpus was built, and through the tool at the same time. The expected verdicts are the oracle's; PyJWT's are compared beside them. 28 agree. Each disagreement is named below with its reason; an unnamed one, or a named one that no longer differs, is a failure.
+
+- duplicate alg, none then HS256: this slice rejects, PyJWT accepts. PyJWT reads the last copy of a repeated name, which RFC 7515 section 4 and RFC 7519 section 4 allow; this slice turns any repeat away, which they also allow (SPEC rule 17).
+- duplicate alg spelled with an escape: this slice rejects, PyJWT accepts. PyJWT reads the last copy of a repeated name, which RFC 7515 section 4 and RFC 7519 section 4 allow; this slice turns any repeat away, which they also allow (SPEC rule 17).
+- duplicate iss, joe then evil, issuer evil: this slice rejects, PyJWT accepts. PyJWT reads the last copy of a repeated name, which RFC 7515 section 4 and RFC 7519 section 4 allow; this slice turns any repeat away, which they also allow (SPEC rule 17).
+- duplicate exp, expired then live: this slice rejects, PyJWT accepts. PyJWT reads the last copy of a repeated name, which RFC 7515 section 4 and RFC 7519 section 4 allow; this slice turns any repeat away, which they also allow (SPEC rule 17).
+- duplicate name nobody reads: this slice rejects, PyJWT accepts. PyJWT reads the last copy of a repeated name, which RFC 7515 section 4 and RFC 7519 section 4 allow; this slice turns any repeat away, which they also allow (SPEC rule 17).
+- b64 false without crit: this slice accepts, PyJWT rejects (DecodeError). PyJWT implements RFC 7797 and reads the payload as unencoded; this slice understands no extension and, as RFC 7515 section 4 asks of a parameter a reader does not understand, ignores b64 when crit does not list it (SPEC rule 18).
+- iat in the future: this slice accepts, PyJWT rejects (ImmatureSignatureError). PyJWT refuses an iat after the current time; RFC 7519 section 4.1.6 sets no such check, and this slice reads iat for its type only (SPEC rule 12).
+- exp a string: this slice rejects, PyJWT accepts. PyJWT converts the string to a number; RFC 7519 makes exp a NumericDate, a JSON number, and this slice turns a string away (SPEC rule 9).
+
 ## Counts
 
-- Total check and request inputs: 467
-- Agreements with the oracle: 467
-- Of the verdict cases: 47 accepted, 410 rejected, 10 malformed requests answered error
+- Total check and request inputs: 743
+- Of these: 20 PyJWT-built tokens under 5 contexts each, 36 PyJWT verdict probes, 240 random corpus cases (seed 20261026), 240 shape corpus cases (seed 20261027), and 127 fixed and mutation cases
+- Agreements with the oracle: 743
+- Of the verdict cases: 105 accepted, 628 rejected, 10 malformed requests answered error
 
 ## RFC 7515 fixed cases
 

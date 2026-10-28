@@ -833,6 +833,79 @@ def build_pyjwt_cases():
 
 
 # ---------------------------------------------------------------
+# PyJWT verdict probes: HS256 tokens signed with a known key, with
+# PyJWT's own verdict (jwt.decode with the key and the context),
+# recorded in the corpus. The expected verdict is still the
+# oracle's; PyJWT's is compared beside it, and every disagreement
+# must be one of the named differences below, with its reason.
+# ---------------------------------------------------------------
+
+PYJWT_LAST_COPY = ("PyJWT reads the last copy of a repeated name, which"
+                   " RFC 7515 section 4 and RFC 7519 section 4 allow;"
+                   " this slice turns any repeat away, which they also"
+                   " allow (SPEC rule 17).")
+PYJWT_NAMED = {
+    "duplicate alg, none then HS256": PYJWT_LAST_COPY,
+    "duplicate alg spelled with an escape": PYJWT_LAST_COPY,
+    "duplicate iss, joe then evil, issuer evil": PYJWT_LAST_COPY,
+    "duplicate exp, expired then live": PYJWT_LAST_COPY,
+    "duplicate name nobody reads": PYJWT_LAST_COPY,
+    "b64 false without crit": (
+        "PyJWT implements RFC 7797 and reads the payload as unencoded;"
+        " this slice understands no extension and, as RFC 7515 section 4"
+        " asks of a parameter a reader does not understand, ignores b64"
+        " when crit does not list it (SPEC rule 18)."),
+    "iat in the future": (
+        "PyJWT refuses an iat after the current time; RFC 7519 section"
+        " 4.1.6 sets no such check, and this slice reads iat for its"
+        " type only (SPEC rule 12)."),
+    "exp a string": (
+        "PyJWT converts the string to a number; RFC 7519 makes exp a"
+        " NumericDate, a JSON number, and this slice turns a string away"
+        " (SPEC rule 9)."),
+}
+PROBE_INFO = {"count": 0, "agree": 0, "named": [], "unnamed": [],
+              "stale": []}
+PROBE_CASES = []
+
+
+def build_probe_cases():
+    data = json.loads(CORPUS.read_text(encoding="utf-8"))
+    now = data["probe_now"]
+    PROBE_INFO["now"] = now
+    for item in data["probes"]:
+        ctx = item["context"]
+        name = "pyjwt probe: " + item["name"]
+        add_check(name, item["token"], now, ctx["allow"], ctx["required"],
+                  ctx["issuer"], ctx["audience"])
+        PROBE_CASES.append((name, item["name"], item["pyjwt"]))
+
+
+def compare_probes(results):
+    """results maps case name to the tool's verdict, 'accept' or
+    'reject'. Returns the failures: unnamed disagreements and named
+    differences that no longer differ."""
+    failures = []
+    for name, probe, pyjwt in PROBE_CASES:
+        ours = results[name]
+        theirs = "accept" if pyjwt == "accept" else "reject"
+        PROBE_INFO["count"] += 1
+        if ours == theirs:
+            PROBE_INFO["agree"] += 1
+            if probe in PYJWT_NAMED:
+                PROBE_INFO["stale"].append(probe)
+                failures.append((name + " (named difference no longer"
+                                 " differs)", ours, pyjwt))
+        elif probe in PYJWT_NAMED:
+            PROBE_INFO["named"].append((probe, ours, pyjwt))
+        else:
+            PROBE_INFO["unnamed"].append((probe, ours, pyjwt))
+            failures.append((name + " (differs from PyJWT, unnamed)", ours,
+                             pyjwt))
+    return failures
+
+
+# ---------------------------------------------------------------
 # Random differential corpus (oracle builds and settles all).
 # ---------------------------------------------------------------
 
@@ -903,6 +976,116 @@ def build_random_cases(count=240):
                   required, issuer, audience)
 
 
+def build_shape_cases(count=240):
+    """Seeded corpus of the shapes the rules turn on: repeated names
+    in the header and the claims (also spelled with JSON escapes),
+    crit members of several kinds, b64, whitespace and CR LF between
+    the JSON tokens, fractional and exponent date values, aud with
+    and without an expected audience, and repeats inside nested
+    objects. The JSON text is written by hand so that names can
+    repeat. Seed SEED + 1, so the random corpus above is unchanged."""
+    rng = random.Random(SEED + 1)
+
+    def name_text(n):
+        if rng.random() < 0.15:
+            i = rng.randrange(len(n))
+            return '"%s\\u%04x%s"' % (n[:i], ord(n[i]), n[i + 1:])
+        return json.dumps(n)
+
+    def obj_text(members):
+        style = rng.choice(["compact", "compact", "spaced", "crlf"])
+        if style == "compact":
+            sep, colon, open_, close = ",", ":", "{", "}"
+        elif style == "spaced":
+            sep, colon, open_, close = ", ", " : ", "{ ", " }"
+        else:
+            sep, colon, open_, close = ",\r\n ", ":", "{", "\r\n}"
+        return open_ + sep.join(name_text(k) + colon + v
+                                for (k, v) in members) + close
+
+    def date_value(base):
+        form = rng.random()
+        if form < 0.5:
+            return str(base)
+        if form < 0.7:
+            return "%d.%d" % (base, rng.randrange(1, 10))
+        if form < 0.8:
+            return "%de0" % base
+        if form < 0.9:
+            return "%d0e-1" % base
+        return "%d.000001" % (base - 1)
+
+    for i in range(count):
+        alg = rng.choice(["HS256", "HS256", "RS256", "none", "ES256"])
+        header = [("alg", json.dumps(alg))]
+        if rng.random() < 0.4:
+            header.append(("typ", '"JWT"'))
+        if rng.random() < 0.2:
+            header.append(("kid", '"k%d"' % rng.randint(1, 3)))
+        if rng.random() < 0.2:
+            header.append(("crit", rng.choice(
+                ['["b64"]', '[]', '["x-ext"]', '"exp"', 'null', '1'])))
+            if rng.random() < 0.5:
+                header.append(("b64", "false"))
+        elif rng.random() < 0.1:
+            header.append(("b64", "false"))
+        if rng.random() < 0.15:
+            k, v = rng.choice(header)
+            header.insert(rng.randrange(len(header) + 1),
+                          (k, rng.choice([v, '"none"', '"HS256"', '1'])))
+        claims = []
+        iss = aud = None
+        if rng.random() < 0.8:
+            iss = rng.choice(["joe", "bob"])
+            claims.append(("iss", json.dumps(iss)))
+        if rng.random() < 0.85:
+            claims.append(("exp", date_value(rng.choice(
+                [1499999999, 1500000000, 1500000001, 2000000000]))))
+        if rng.random() < 0.4:
+            claims.append(("nbf", date_value(rng.choice(
+                [1400000000, 1500000000, 1500000001]))))
+        if rng.random() < 0.3:
+            claims.append(("iat", date_value(1450000000)))
+        if rng.random() < 0.4:
+            aud = rng.choice(['"api"', '"web"', '["api","web"]', '[]',
+                              '["web",7]'])
+            claims.append(("aud", aud))
+        if rng.random() < 0.15:
+            claims.append(("ctx", rng.choice(
+                ['{"a":1,"a":2}', '{"a":{"b":1,"b":2}}', '{"a":1}'])))
+        if claims and rng.random() < 0.2:
+            k, _ = rng.choice(claims)
+            claims.insert(rng.randrange(len(claims) + 1),
+                          (k, rng.choice(['"joe"', '2000000000', '1'])))
+        rng.shuffle(claims)
+        sig = bytes(rng.randrange(256)
+                    for _ in range(0 if rng.random() < 0.1 else 32))
+        tok = hand_token(obj_text(header).encode("utf-8"),
+                         obj_text(claims).encode("utf-8"), sig)
+        if rng.random() < 0.7:
+            # A context made for this token, so that the shape alone
+            # decides: its alg allowed, its issuer and an audience it
+            # names expected, only claims it has required.
+            now = rng.choice([None, 1500000000])
+            allow = [alg] if alg != "none" else ["HS256"]
+            required = rng.choice([[], [k for (k, _) in claims][:1]])
+            issuer = rng.choice([None, iss])
+            audience = None
+            if aud is not None:
+                names = [x for x in json.loads(aud) if isinstance(x, str)] \
+                    if aud.startswith("[") else [json.loads(aud)]
+                audience = rng.choice(names) if names else "api"
+        else:
+            now = rng.choice([None, 1500000000, 1450000000])
+            allow = rng.choice([["HS256"], ["HS256", "RS256"], ["ES256"],
+                                ["RS256"], ["HS256", "none"]])
+            required = rng.choice([[], [], ["iss"], ["exp", "iss"], ["sub"]])
+            issuer = rng.choice([None, None, "joe", "bob"])
+            audience = rng.choice([None, None, "api", "web"])
+        add_check("shape %d" % i, tok, now, allow, required, issuer,
+                  audience)
+
+
 # ---------------------------------------------------------------
 # Run everything and write the record.
 # ---------------------------------------------------------------
@@ -912,7 +1095,9 @@ def main():
         print("executable missing; run lake build first", file=sys.stderr)
         return 1
     build_pyjwt_cases()
+    build_probe_cases()
     build_random_cases()
+    build_shape_cases()
     lines = [req for (_, req, _) in CASES]
     answers = run_lean(lines)
     if len(answers) != len(CASES):
@@ -923,12 +1108,14 @@ def main():
     accepted = 0
     rejected = 0
     errors = 0
+    verdicts = {}
     for (name, _, want), ans in zip(CASES, answers):
         try:
             got = decode_answer(ans)
         except ValueError:
             failures.append((name, "unreadable answer " + ans[:60], want))
             continue
+        verdicts[name] = "reject" if got is None else "accept"
         if want == "error":
             errors += 1
             ok = got == "error"
@@ -952,6 +1139,8 @@ def main():
         hmac_checked += 1
         if not (isinstance(got, str) and a1_signature_ok(got)):
             failures.append((name + " (A.1 HMAC on the answer)", got, want))
+
+    failures += compare_probes(verdicts)
 
     fixed = [c for c in CASES if c[0].startswith("A.")]
     fixed_fail = [f for f in failures if f[0].startswith("A.")]
@@ -990,9 +1179,44 @@ def main():
                         PYJWT_INFO["decode_agreements"],
                         len(PYJWT_INFO["decode_differences"])))
     lines_out.append("")
+    lines_out.append("## PyJWT verdicts on the probe tokens")
+    lines_out.append("")
+    lines_out.append("%d HS256 probe tokens, signed with a known key, were"
+                     " run through PyJWT's `jwt.decode` (with that key and"
+                     " each probe's algorithms, issuer, audience and"
+                     " required claims, at the time %d) when the corpus"
+                     " was built, and through the tool at the same time."
+                     " The expected verdicts are the oracle's; PyJWT's"
+                     " are compared beside them. %d agree. Each"
+                     " disagreement is named below with its reason; an"
+                     " unnamed one, or a named one that no longer"
+                     " differs, is a failure."
+                     % (PROBE_INFO["count"], PROBE_INFO["now"],
+                        PROBE_INFO["agree"]))
+    lines_out.append("")
+    for probe, ours, pyjwt in PROBE_INFO["named"]:
+        lines_out.append("- %s: this slice %ss, PyJWT %s. %s"
+                         % (probe, ours, pyjwt.replace("reject", "rejects")
+                            .replace("accept", "accepts"),
+                            PYJWT_NAMED[probe]))
+    for probe, ours, pyjwt in PROBE_INFO["unnamed"]:
+        lines_out.append("- UNNAMED %s: this slice %ss, PyJWT %s."
+                         % (probe, ours, pyjwt))
+    lines_out.append("")
     lines_out.append("## Counts")
     lines_out.append("")
     lines_out.append("- Total check and request inputs: %d" % len(CASES))
+    lines_out.append("- Of these: %d PyJWT-built tokens under %d contexts"
+                     " each, %d PyJWT verdict probes, %d random corpus"
+                     " cases (seed %d), %d shape corpus cases (seed %d),"
+                     " and %d fixed and mutation cases"
+                     % (PYJWT_INFO["tokens"], 5, PROBE_INFO["count"],
+                        sum(1 for c in CASES if c[0].startswith("random ")),
+                        SEED,
+                        sum(1 for c in CASES if c[0].startswith("shape ")),
+                        SEED + 1,
+                        sum(1 for c in CASES if not c[0].startswith(
+                            ("random ", "shape ", "pyjwt ")))))
     lines_out.append("- Agreements with the oracle: %d"
                      % (len(CASES) - len(failures)))
     lines_out.append("- Of the verdict cases: %d accepted, %d rejected,"
