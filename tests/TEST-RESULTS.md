@@ -4,7 +4,7 @@ Written by `python3 tests/run_tests.py`, which drives the built tool `.lake/buil
 
 - Oracle: the SPEC.md rules reimplemented in tests/run_tests.py (Python 3.13), with tokens and decodes from PyJWT 2.15.1 (cryptography 46.0.3)
 - Seed: 20261026
-- Inputs: 448
+- Inputs: 454
 - Failures: 0
 
 ## The oracle and PyJWT
@@ -14,9 +14,9 @@ PyJWT's decode was compared with the oracle's parse on 20 tokens: 20 agreements,
 
 ## Counts
 
-- Total check and request inputs: 448
-- Agreements with the oracle: 448
-- Of the verdict cases: 54 accepted, 384 rejected, 10 malformed requests answered error
+- Total check and request inputs: 454
+- Agreements with the oracle: 454
+- Of the verdict cases: 38 accepted, 406 rejected, 10 malformed requests answered error
 
 ## RFC 7515 fixed cases
 
@@ -45,6 +45,7 @@ The A.5 example is the RFC's unsecured (alg none) compact example; in the final 
 - Named change from review 1 item 1: a header or claims object that repeats a member name is turned away (SPEC rule 17; RFC 7515 section 4 and RFC 7519 section 4 allow only that or reading the last copy). The earlier reading took the first copy; the fixed cases that pinned it (duplicate iss, duplicate alg) now expect refusal, and new cases cover duplicate exp, aud, kid, a name that is never read, and a name spelled with a JSON escape. Names inside nested objects are not checked, since the slice reads no member of a nested object; a fixed case pins that.
 - Named change from review 1 item 2: a header with a `crit` member, of any value, is turned away (SPEC rule 18). The slice understands no extension, and RFC 7515 section 4.1.11 makes a token invalid when `crit` names one the reader does not understand. Fixed cases cover b64, an unknown name, a URI name, an empty list, a string, null, and an escaped spelling; `crit` as a claim name is not a header member and passes.
 - Named change from review 1 item 3: an accepted token is answered with the token text as received, not a canonical reprint, so its signature still matches its signing input. The RFC 7515 A.1 HMAC (with the RFC's key) was checked on the tool's answer for 3 A.1 accept cases, and on the A.1 input itself: verifies.
+- Named change from review 1 item 6: with no expected audience, a token that carries `aud` is turned away (SPEC rule 16). RFC 7519 section 4.1.3 asks a reader that does not identify itself with a value in `aud` to reject the token. PyJWT reads it the same way; some other libraries accept such a token. Generated tokens with `aud` under a context with no audience now expect refusal in the oracle.
 - The none rule is the exact name `none`. An alg of `None` is a different name and can be allowed.
 - Date claims are judged by value, not by spelling: `2.0e9` and `20000000000e-1` are the whole number 2000000000, and `1e999999999` compares without ever being written out.
 - PyJWT decode differences (its parser against the oracle's on well formed tokens): 0.

@@ -157,3 +157,21 @@ theorem Spec.rejects_crit_b64 (ctx : Context) :
       "eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID".toList
         = some t ∧ accept t ctx = false :=
   Jws.Proofs.refused_of_shape _ ctx (by decide +kernel)
+
+theorem Spec.rejects_aud_without_audience :
+    (parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.AQID".toList).map
+      (fun t => accept t
+        { allow := ["HS256".toList], now := some 1500000000, required := [],
+          issuer := some "joe".toList, audience := none })
+      = some false := by
+  decide +kernel
+
+theorem Spec.accepts_aud_with_audience :
+    (parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.AQID".toList).map
+      (fun t => accept t
+        { allow := ["HS256".toList], now := some 1500000000, required := [],
+          issuer := some "joe".toList, audience := some "other-tenant".toList })
+      = some true := by
+  decide +kernel

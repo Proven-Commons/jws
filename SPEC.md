@@ -120,7 +120,11 @@ The token is accepted only when every rule holds:
     and exactly equal to it. A missing `iss` rejects.
 16. When an expected audience is given, `aud` must be that
     string, or an array holding that string as a member. A
-    missing `aud` rejects.
+    missing `aud` rejects. When no expected audience is given,
+    a token that carries `aud` at all is turned away: RFC 7519
+    section 4.1.3 asks a reader that does not identify itself
+    with a value in `aud` to reject the token, and a caller
+    that gives no audience identifies itself with none.
 17. Neither the header object nor the claims object repeats a
     member name. Names are compared after JSON unescaping, so
     `"alg"` and `"\u0061lg"` are the same name. RFC 7515 section 4
@@ -254,5 +258,7 @@ and `Jws.accept` the command line tool calls; the tests in
 | An accepted token's header and claims are objects that repeat no member name (rules 3, 4, 17) | `Spec.accept_names_unique` |
 | The token with header `{"alg":"HS256","alg":"none"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_alg` |
 | The token with claims `{"iss":"joe","exp":2000000000,"iss":"evil"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_iss` |
+| A token carrying `aud` is refused when no audience is expected (rule 16) | `Spec.rejects_aud_without_audience` |
+| The same token is accepted when its audience is the expected one | `Spec.accepts_aud_with_audience` |
 | An accepted token's header has no `crit` member (rule 18) | `Spec.accept_no_crit` |
 | The token with header `{"alg":"HS256","b64":false,"crit":["b64"]}` parses and is refused under every context (rule 18) | `Spec.rejects_crit_b64` |

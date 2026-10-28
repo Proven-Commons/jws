@@ -93,6 +93,8 @@ where they end in `sorry`) and proved in
 | When the check accepts a token, under any context, its header and its claims are JSON objects and neither repeats a member name. | `Spec.accept_names_unique` |
 | The token `eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","alg":"none"}`, parses and is refused under every context. | `Spec.rejects_duplicate_alg` |
 | The token whose claims are `{"iss":"joe","exp":2000000000,"iss":"evil"}` (header `{"alg":"HS256"}`, signature bytes 01 02 03) parses and is refused under every context. | `Spec.rejects_duplicate_iss` |
+| The token `eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.AQID`, whose claims are `{"iss":"joe","exp":2000000000,"aud":"other-tenant"}`, parses and is refused when HS256 is allowed, the current time is 1500000000, the issuer must be `joe`, and no audience is expected. | `Spec.rejects_aud_without_audience` |
+| The same token is accepted under the same context when the expected audience is `other-tenant`. | `Spec.accepts_aud_with_audience` |
 | When the check accepts a token, under any context, its header is a JSON object with no `crit` member. | `Spec.accept_no_crit` |
 | The token `eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","b64":false,"crit":["b64"]}`, parses and is refused under every context. | `Spec.rejects_crit_b64` |
 
@@ -163,7 +165,7 @@ directly, the same functions the theorems are about.
 - Speed. The code works on lists, which suits proofs,
   not large tokens.
 
-Three readings worth naming, all stated in `SPEC.md` and
+Four readings worth naming, all stated in `SPEC.md` and
 pinned by tests:
 
 - An empty signature part is well formed base64url, but
@@ -188,6 +190,12 @@ pinned by tests:
   makes a token invalid when `crit` names one the reader
   does not understand. `Spec.accept_no_crit` proves it
   for every accepted token.
+- With no expected audience, a token that carries `aud`
+  is turned away (`SPEC.md` rule 16): RFC 7519 section
+  4.1.3 asks a reader that does not identify itself with
+  a value in `aud` to reject the token. PyJWT reads it
+  the same way; some other libraries accept such a
+  token.
 
 ## What you must trust
 

@@ -242,3 +242,37 @@ theorem Spec.rejects_crit_b64 (ctx : Context) :
     ∃ t, parseToken
       "eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID".toList
         = some t ∧ accept t ctx = false := sorry
+
+/-! ## The audience claim when no audience is expected
+
+RFC 7519 section 4.1.3: when `aud` is present and the reader does
+not identify itself with a value in it, the token must be
+rejected. A caller that gives no expected audience identifies
+itself with none, so such a token is turned away. -/
+
+/-- The token with claims
+    `{"iss":"joe","exp":2000000000,"aud":"other-tenant"}`, header
+    `{"alg":"HS256"}` and signature bytes 01 02 03 parses and is
+    refused when HS256 is allowed, the current time is 1500000000,
+    the issuer must be `joe`, and no audience is expected. The
+    harness case is "aud present, no audience expected:
+    refused". -/
+theorem Spec.rejects_aud_without_audience :
+    (parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.AQID".toList).map
+      (fun t => accept t
+        { allow := ["HS256".toList], now := some 1500000000, required := [],
+          issuer := some "joe".toList, audience := none })
+      = some false := sorry
+
+/-- The same token is accepted under the same context when the
+    expected audience is `other-tenant`, so the refusal above
+    comes from the audience rule alone. The harness case is "aud
+    present, the same audience expected: accepted". -/
+theorem Spec.accepts_aud_with_audience :
+    (parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.AQID".toList).map
+      (fun t => accept t
+        { allow := ["HS256".toList], now := some 1500000000, required := [],
+          issuer := some "joe".toList, audience := some "other-tenant".toList })
+      = some true := sorry

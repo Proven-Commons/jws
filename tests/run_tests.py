@@ -263,7 +263,12 @@ def oracle_check(token_text, now, allow, required, issuer, audience):
         iss = lookup("iss", claims)
         if iss is None or iss[0] != "str" or iss[1] != issuer:
             return None
-    if audience is not None:
+    if audience is None:
+        # With no expected audience, a token that carries aud is
+        # turned away (SPEC rule 16; RFC 7519 section 4.1.3).
+        if lookup("aud", claims) is not None:
+            return None
+    else:
         aud = lookup("aud", claims)
         if aud is None:
             return None
@@ -546,6 +551,26 @@ add_check("mutation: aud array missing the expected value (reject)",
 add_check("aud string equal to the expected value (accept)",
           claims_token(b'{"aud":"api","exp":2000000000}'),
           NOW, ["HS256"], [], None, "api")
+# aud when no audience is expected: refused (SPEC rule 16, RFC 7519
+# section 4.1.3). Review 1 item 6.
+AUD_TOKEN = ("eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1"
+             "ZCI6Im90aGVyLXRlbmFudCJ9.AQID")
+add_check("aud present, no audience expected: refused", AUD_TOKEN,
+          NOW, ["HS256"], [], "joe", None)
+add_check("aud present, the same audience expected: accepted", AUD_TOKEN,
+          NOW, ["HS256"], [], "joe", "other-tenant")
+add_check("aud array present, no audience expected: refused",
+          claims_token(b'{"aud":["api","web"],"exp":2000000000}'),
+          NOW, ["HS256"], [], None, None)
+add_check("aud empty array, no audience expected: refused",
+          claims_token(b'{"aud":[],"exp":2000000000}'),
+          NOW, ["HS256"], [], None, None)
+add_check("aud empty array, an audience expected: refused",
+          claims_token(b'{"aud":[],"exp":2000000000}'),
+          NOW, ["HS256"], [], None, "api")
+add_check("aud present, no audience expected, no time checks: refused",
+          claims_token(b'{"aud":"api"}'),
+          None, ["HS256"], [], None, None)
 add_check("mutation: expected audience, aud missing (reject)",
           claims_token(b'{"exp":2000000000}'),
           NOW, ["HS256"], [], None, "api")
@@ -984,6 +1009,15 @@ def main():
                      " cases, and on the A.1 input itself: %s."
                      % (hmac_checked, "verifies" if a1_signature_ok(A1)
                         else "DOES NOT VERIFY"))
+    lines_out.append("- Named change from review 1 item 6: with no"
+                     " expected audience, a token that carries `aud` is"
+                     " turned away (SPEC rule 16). RFC 7519 section"
+                     " 4.1.3 asks a reader that does not identify"
+                     " itself with a value in `aud` to reject the"
+                     " token. PyJWT reads it the same way; some other"
+                     " libraries accept such a token. Generated tokens"
+                     " with `aud` under a context with no audience now"
+                     " expect refusal in the oracle.")
     lines_out.append("- The none rule is the exact name `none`. An alg of"
                      " `None` is a different name and can be allowed.")
     lines_out.append("- Date claims are judged by value, not by spelling:"

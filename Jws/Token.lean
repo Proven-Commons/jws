@@ -239,7 +239,8 @@ def dateClaim (name : List Char) (claims : Json) : ClaimDate :=
     the current time in seconds (none means the time comparisons
     are skipped; the type rules still hold), the claims that must
     be present, the expected issuer if any, the expected audience
-    if any. -/
+    if any. With no expected audience, a token that carries `aud`
+    is turned away (RFC 7519 section 4.1.3). -/
 structure Context where
   allow : List (List Char)
   now : Option Int
@@ -320,7 +321,7 @@ def accept (t : Token) (ctx : Context) : Bool :=
            | some (.str s) => s == i
            | _ => false) &&
         (match ctx.audience with
-         | none => true
+         | none => (lookup "aud".toList t.claims).isNone
          | some a => audOk t.claims a)
       | _ => false
     | _, _ => false
