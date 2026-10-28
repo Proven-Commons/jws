@@ -120,6 +120,11 @@ The token is accepted only when every rule holds:
    decimal, not by its spelling: `2.0e9` is 2000000000, and a
    value like `1e999999999` or `1e-999999999` is compared
    exactly, without ever being written out in full.
+   `Spec/Defs.lean` writes this value out from the grammar
+   (`Spec.numberText`, `Spec.digitsValue`, `Spec.expValue`,
+   `Spec.atBase`), and the checker's reading and comparison are
+   proved exact against it (`Spec.numVal_value`,
+   `Spec.cmp_exact`, `Spec.numVal_cmp_now`).
 10. When `exp` is present and a current time is supplied, the
     current time must be before `exp`. A current time equal to
     `exp` rejects (the token is expired at that second).
@@ -248,8 +253,9 @@ digits, an unknown operation).
 ## Properties and their theorems
 
 Each property a reader can check in the page (`README.md`)
-names its theorem. The theorems are stated in `Spec.lean`
-and proved in `Proofs/SpecProofs.lean`. The single token
+names its theorem. The theorems are stated in `Spec.lean`,
+with the definitions in `Spec/Defs.lean`, and proved in
+`Proofs/SpecProofs.lean`. The single token
 theorems are single inputs, one for each named fixed case
 in the test harness, run through the same `Jws.parseToken`
 and `Jws.accept` the command line tool calls; the tests in
@@ -274,7 +280,7 @@ input theorems and the tests.
 | A token whose algorithm is outside the allowlist is refused (rule 7) | `Spec.rejects_alg_outside_allowlist` |
 | A token with a part that is not strict base64url does not parse | `Spec.rejects_part_not_base64url` |
 | A token whose header is not a JSON object is refused (rule 3) | `Spec.rejects_header_not_object` |
-| An accepted token meets rules 2 to 18, the date comparisons as `Jws.NumVal.cmp` makes them | `Spec.accept_sound` |
+| An accepted token meets rules 2 to 18, the date comparisons as `Jws.NumVal.cmp` makes them (proved exact by `Spec.numVal_cmp_now`) | `Spec.accept_sound` |
 | An accepted token's header and claims are objects that repeat no member name (rules 3, 4, 17) | `Spec.accept_names_unique` |
 | The token with header `{"alg":"HS256","alg":"none"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_alg` |
 | The token with claims `{"iss":"joe","exp":2000000000,"iss":"evil"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_iss` |
@@ -282,5 +288,10 @@ input theorems and the tests.
 | The token with header `{"alg":"HS256","b64":false,"crit":["b64"]}` parses and is refused under every context (rule 18) | `Spec.rejects_crit_b64` |
 | A token with `exp` 2000000000.5 is accepted at 2000000000 (rules 9, 10) | `Spec.accepts_fractional_exp_before` |
 | The same token is refused at 2000000001 (rules 9, 10) | `Spec.rejects_fractional_exp_after` |
+| `Jws.NumVal.cmp` compares exact decimal values (rules 9 to 11) | `Spec.cmp_exact` |
+| `Jws.numVal` reads every number text of the JSON grammar as its decimal value (rule 9) | `Spec.numVal_value` |
+| The current time is compared exactly with a date claim's decimal value (rules 10, 11) | `Spec.numVal_cmp_now` |
+| A token with `exp` -1 is refused at the current time 0 (rules 9, 10) | `Spec.rejects_negative_exp` |
+| A token with `exp` -0.5 is accepted at the current time -1 (rules 9, 10) | `Spec.accepts_negative_fraction_exp` |
 | A token carrying `aud` is refused when no audience is expected (rule 16) | `Spec.rejects_aud_without_audience` |
 | The same token is accepted when its audience is the expected one | `Spec.accepts_aud_with_audience` |

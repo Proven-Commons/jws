@@ -27,9 +27,10 @@ repos in this org do not import each other. The rules are
 written out in `SPEC.md`.
 
 The statements a reviewer approves are in `Spec.lean`,
-with their proofs in `Proofs/SpecProofs.lean`. No reviewer
-has approved them yet, so this project is not called
-verified.
+with the definitions in `Spec/Defs.lean` that give the
+decimal value of a JSON number text, and their proofs in
+`Proofs/SpecProofs.lean`. No reviewer has approved them
+yet, so this project is not called verified.
 
 One limit stands up front: this slice does not verify a
 signature. A token that passes every check is well formed
@@ -109,7 +110,7 @@ where they end in `sorry`) and proved in
 | The A.1 token is refused when its algorithm, HS256, is outside the allowlist (RS256 alone). | `Spec.rejects_alg_outside_allowlist` |
 | A token whose first part carries a padding character does not parse: `=` is not in the base64url alphabet. | `Spec.rejects_part_not_base64url` |
 | A token whose header part decodes to a JSON array, not an object, is refused. | `Spec.rejects_header_not_object` |
-| When the check accepts a token, under any context: the allowlist does not name `none`; the signature is not empty; the header and the claims are JSON objects with no repeated member name; the header has no `crit` member; the header's `alg` is a string other than `none`, on the allowlist; every required claim is present; `exp`, `nbf` and `iat`, when present, are JSON numbers, and when a current time is given it is before `exp` and not before `nbf`, as the checker's exact decimal comparison (`Jws.NumVal.cmp` on `Jws.numVal`) orders them; `iss`, when present, is a string; `aud`, when present, is a string or an array of strings; when an issuer is expected, `iss` is that string; when no audience is expected there is no `aud`; and when one is, `aud` is that string or an array holding it. | `Spec.accept_sound` |
+| When the check accepts a token, under any context: the allowlist does not name `none`; the signature is not empty; the header and the claims are JSON objects with no repeated member name; the header has no `crit` member; the header's `alg` is a string other than `none`, on the allowlist; every required claim is present; `exp`, `nbf` and `iat`, when present, are JSON numbers, and when a current time is given it is before `exp` and not before `nbf`, as the checker's decimal comparison (`Jws.NumVal.cmp` on `Jws.numVal`) orders them, which `Spec.numVal_cmp_now` below proves exact; `iss`, when present, is a string; `aud`, when present, is a string or an array of strings; when an issuer is expected, `iss` is that string; when no audience is expected there is no `aud`; and when one is, `aud` is that string or an array holding it. | `Spec.accept_sound` |
 | When the check accepts a token, under any context, its header and its claims are JSON objects and neither repeats a member name. | `Spec.accept_names_unique` |
 | The token `eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","alg":"none"}`, parses and is refused under every context. | `Spec.rejects_duplicate_alg` |
 | The token whose claims are `{"iss":"joe","exp":2000000000,"iss":"evil"}` (header `{"alg":"HS256"}`, signature bytes 01 02 03) parses and is refused under every context. | `Spec.rejects_duplicate_iss` |
@@ -117,6 +118,11 @@ where they end in `sorry`) and proved in
 | The token `eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","b64":false,"crit":["b64"]}`, parses and is refused under every context. | `Spec.rejects_crit_b64` |
 | The token `eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.AQID`, whose claims are `{"exp":2000000000.5}`, parses and is accepted at the current time 2000000000 with HS256 allowed: a fractional expiry is compared exactly. | `Spec.accepts_fractional_exp_before` |
 | The same token is refused at the current time 2000000001, after it expired. | `Spec.rejects_fractional_exp_after` |
+| `Jws.NumVal.cmp`, the comparison the date rules use, compares exact decimal values: for any power of ten `10^m` with `m` at most both exponents, it orders two number values as their values written as whole numbers over `10^m` (`Spec.atBase`, in `Spec/Defs.lean`). | `Spec.cmp_exact` |
+| `Jws.numVal` reads every number text of the JSON grammar (an optional minus sign, integer digits, optional fraction digits, an optional exponent part) and gives the text's decimal value: the sign, the integer and fraction digits read as one whole number (`Spec.digitsValue`), and ten to the exponent (`Spec.expValue`) less the count of fraction digits. | `Spec.numVal_value` |
+| The comparison the `exp` and `nbf` rules make between the current time and a claim's number text of the JSON grammar is the exact comparison of the whole number with the text's decimal value. | `Spec.numVal_cmp_now` |
+| The hand built token with claims `{"exp":-1}` (header `{"alg":"HS256"}`, the 32 byte signature) is refused at the current time 0 with HS256 allowed. | `Spec.rejects_negative_exp` |
+| The same header and signature with claims `{"exp":-0.5}` are accepted at the current time -1. | `Spec.accepts_negative_fraction_exp` |
 | The token `eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.AQID`, whose claims are `{"iss":"joe","exp":2000000000,"aud":"other-tenant"}`, parses and is refused when HS256 is allowed, the current time is 1500000000, the issuer must be `joe`, and no audience is expected. | `Spec.rejects_aud_without_audience` |
 | The same token is accepted under the same context when the expected audience is `other-tenant`. | `Spec.accepts_aud_with_audience` |
 
@@ -136,7 +142,8 @@ both directions: `Spec.decode_encode` above, and the
 reverse, encoding a decoding gives the text back
 (`Jws.Base64url.Proofs.encode_decode`, in
 `Proofs/B64.lean`). The theorems about acceptance are
-proved in `Proofs/Check.lean`. The single token theorems
+proved in `Proofs/Check.lean`, and the theorems about the
+value of a number in `Proofs/Num.lean`. The single token theorems
 are named fixed cases in the test harness, run through
 the same `Jws.parseToken` and `Jws.accept` the command
 line tool calls. Those with one context are checked in
@@ -181,14 +188,14 @@ directly, the same functions the theorems are about.
   or `makeToken`, has parts and values that match: the
   `Token` structure does not enforce it, and the theorems
   cover only those two ways of making one.
-- That the checker's exact decimal reading of a date
-  claim (`Jws.numVal`) and its comparison
-  (`Jws.NumVal.cmp`) agree with the decimal value of the
-  number text. The theorems state the date rules in the
-  checker's own terms; the agreement rests on the tests,
-  which compare it with Python's `Decimal`, including
-  fractions, exponent spellings, and exponents of
-  999999999 and -999999999.
+- That the JSON parser hands the checker only number
+  texts of the JSON grammar. `Spec.numVal_value` and
+  `Spec.numVal_cmp_now` cover every text of the grammar;
+  the json slice's parser checks the grammar before it
+  builds a number, but no theorem here says so. The tests
+  cover it, comparing the date rules with Python's
+  `Decimal` on fractions, exponent spellings, and
+  exponents of 999999999 and -999999999.
 - Reading requests and printing answers in `Main.lean`:
   line splitting, the field format, the decimal code
   reading. The tests cover them, malformed requests

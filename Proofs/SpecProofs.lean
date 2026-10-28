@@ -3,17 +3,20 @@
   names.
 
   The round trips are the theorems proved in
-  `Proofs/Token.lean` and `Proofs/B64.lean`. The single
+  `Proofs/Token.lean` and `Proofs/B64.lean`; the number
+  statements are proved in `Proofs/Num.lean`. The single
   tokens are checked in the kernel with `decide +kernel`: no
   native evaluation, which the bar forbids.
 -/
 
 import Jws
+import Spec.Defs
 import Proofs.Token
 import Proofs.B64
 import Proofs.Check
+import Proofs.Num
 
-open Jws
+open Jws Spec
 
 theorem Spec.printToken_parse (s : List Char) (t : Token)
     (h : parseToken s = some t) :
@@ -192,6 +195,47 @@ theorem Spec.rejects_fractional_exp_after :
         { allow := ["HS256".toList], now := some 2000000001, required := [],
           issuer := none, audience := none })
       = some false := by
+  decide +kernel
+
+theorem Spec.cmp_exact (a b : NumVal) (m : Int) (ha : m ≤ a.exp) (hb : m ≤ b.exp) :
+    NumVal.cmp a b = compare (atBase a.neg a.sig a.exp m) (atBase b.neg b.sig b.exp m) :=
+  Jws.Proofs.Num.cmp_exact a b m ha hb
+
+theorem Spec.numVal_value (neg : Bool) (ints frac ex : List Char)
+    (hi : ints ≠ [] ∧ ∀ d ∈ ints, Json.IsDigit d) (hf : ∀ d ∈ frac, Json.IsDigit d)
+    (hx : Json.ExpOk ex) :
+    ∃ v, numVal (numberText neg ints frac ex) = some v ∧
+      ∀ m, m ≤ v.exp → m ≤ expValue ex - frac.length →
+        atBase v.neg v.sig v.exp m =
+          atBase neg (digitsValue (ints ++ frac)) (expValue ex - frac.length) m :=
+  Jws.Proofs.Num.numVal_value neg ints frac ex hi hf hx
+
+theorem Spec.numVal_cmp_now (now : Int) (neg : Bool) (ints frac ex : List Char)
+    (hi : ints ≠ [] ∧ ∀ d ∈ ints, Json.IsDigit d) (hf : ∀ d ∈ frac, Json.IsDigit d)
+    (hx : Json.ExpOk ex) :
+    ∃ v, numVal (numberText neg ints frac ex) = some v ∧
+      NumVal.cmp (NumVal.ofInt now) v =
+        compare (now * 10 ^ (-(min 0 (expValue ex - frac.length))).toNat)
+          (atBase neg (digitsValue (ints ++ frac)) (expValue ex - frac.length)
+            (min 0 (expValue ex - frac.length))) :=
+  Jws.Proofs.Num.numVal_cmp_now now neg ints frac ex hi hf hx
+
+theorem Spec.rejects_negative_exp :
+    (parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOi0xfQ.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8".toList).map
+      (fun t => accept t
+        { allow := ["HS256".toList], now := some 0, required := [],
+          issuer := none, audience := none })
+      = some false := by
+  decide +kernel
+
+theorem Spec.accepts_negative_fraction_exp :
+    (parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOi0wLjV9.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8".toList).map
+      (fun t => accept t
+        { allow := ["HS256".toList], now := some (-1), required := [],
+          issuer := none, audience := none })
+      = some true := by
   decide +kernel
 
 theorem Spec.accept_sound (t : Token) (ctx : Context)

@@ -12,7 +12,7 @@ spec_authors = ["abu-aska", "zero-aska"]
 entry_points = ["Main.lean"]
 
 [spec]
-files = ["SPEC.md", "Spec.lean"]
+files = ["SPEC.md", "Spec.lean", "Spec/Defs.lean"]
 # The code under proof: the functions the statements are about.
 code = [
   # The token value, its constructor and fields.
@@ -23,7 +23,8 @@ code = [
   "Jws.splitSep", "Jws.joinSep", "Jws.printToken", "Jws.parseToken",
   "Jws.makeToken",
   # The exact decimal reading of claim numbers, which the check uses.
-  "Jws.NumVal", "Jws.digitsVal", "Jws.strip", "Jws.mkNumVal",
+  "Jws.NumVal", "Jws.NumVal.mk", "Jws.NumVal.neg", "Jws.NumVal.sig",
+  "Jws.NumVal.exp", "Jws.digitsVal", "Jws.strip", "Jws.mkNumVal",
   "Jws.numVal", "Jws.numVal.finish", "Jws.numVal.withExp", "Jws.NumVal.ofInt",
   "Jws.numDigits", "Jws.magCmp", "Jws.NumVal.cmp",
   # The check: the context, the claim reading, the accept function.

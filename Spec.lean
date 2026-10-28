@@ -7,15 +7,18 @@
   checks that each one proves exactly the statement written
   here. The `sorry` below is expected in this file only.
 
-  The statements use only the definitions in `Jws/Token.lean`,
+  The statements use the definitions in `Jws/Token.lean`,
   `Jws/Base64url.lean`, `Jws/Utf8.lean`, and the JSON code
   carried into this repo (`Json/Value.lean` and
   `Json/Parse.lean`), the code under proof named in
-  `bar.toml`. No definition of their own is needed, so this
-  project has no `Spec/Defs.lean`.
+  `bar.toml`. The statements about the value of a number also
+  use `Spec/Defs.lean`: the decimal value of a JSON number
+  text, written from RFC 8259 separately from the checker's
+  own reading. That file is part of the specification too.
 -/
 
 import Jws
+import Spec.Defs
 
 open Jws
 
@@ -306,6 +309,78 @@ theorem Spec.rejects_fractional_exp_after :
           issuer := none, audience := none })
       = some false := sorry
 
+/-! ## The value of a date claim
+
+The date rules compare the current time with the number an `exp`
+or `nbf` claim holds, through the checker's exact decimal reading
+`numVal` and its comparison `NumVal.cmp`. These statements tie
+both to the decimal value of the number text, defined in
+`Spec/Defs.lean` from the JSON grammar: `numberText` builds a text
+from its pieces, `digitsValue` and `expValue` give the value of
+the digits and of the exponent part, and `atBase` writes a decimal
+as a whole number over a chosen power of ten. -/
+
+/-- `NumVal.cmp` compares the exact values of two number values:
+    over any power of ten `10^m` with `m` at most both exponents,
+    it is the comparison of the two values written as whole
+    numbers over `10^m`. -/
+theorem Spec.cmp_exact (a b : NumVal) (m : Int) (ha : m ≤ a.exp) (hb : m ≤ b.exp) :
+    NumVal.cmp a b = compare (atBase a.neg a.sig a.exp m) (atBase b.neg b.sig b.exp m) := sorry
+
+/-- `numVal` reads every number text of the JSON grammar (an
+    optional minus sign, one or more integer digits, optional
+    fraction digits after a point, an optional exponent part),
+    and what it returns has the text's decimal value: the sign,
+    the integer and fraction digits read as one whole number, and
+    ten to the exponent less the count of fraction digits. -/
+theorem Spec.numVal_value (neg : Bool) (ints frac ex : List Char)
+    (hi : ints ≠ [] ∧ ∀ d ∈ ints, Json.IsDigit d) (hf : ∀ d ∈ frac, Json.IsDigit d)
+    (hx : Json.ExpOk ex) :
+    ∃ v, numVal (numberText neg ints frac ex) = some v ∧
+      ∀ m, m ≤ v.exp → m ≤ expValue ex - frac.length →
+        atBase v.neg v.sig v.exp m =
+          atBase neg (digitsValue (ints ++ frac)) (expValue ex - frac.length) m := sorry
+
+/-- The comparison the `exp` and `nbf` rules make, between the
+    current time `now` (`NumVal.ofInt now`) and a claim's number
+    text of the JSON grammar, is the exact comparison of the whole
+    number `now` with the text's decimal value: both are written
+    as whole numbers over `10^m`, where `m` is the smaller of zero
+    and the text's exponent less its count of fraction digits. -/
+theorem Spec.numVal_cmp_now (now : Int) (neg : Bool) (ints frac ex : List Char)
+    (hi : ints ≠ [] ∧ ∀ d ∈ ints, Json.IsDigit d) (hf : ∀ d ∈ frac, Json.IsDigit d)
+    (hx : Json.ExpOk ex) :
+    ∃ v, numVal (numberText neg ints frac ex) = some v ∧
+      NumVal.cmp (NumVal.ofInt now) v =
+        compare (now * 10 ^ (-(min 0 (expValue ex - frac.length))).toNat)
+          (atBase neg (digitsValue (ints ++ frac)) (expValue ex - frac.length)
+            (min 0 (expValue ex - frac.length))) := sorry
+
+/-- The harness's hand built token with claims `{"exp":-1}` (header
+    `{"alg":"HS256"}`, its 32 byte signature) is refused at the
+    current time 0, with HS256 allowed: it expired a second before.
+    A reading that dropped the minus sign would accept it. The
+    harness case is "mutation: negative exp, now zero (reject)". -/
+theorem Spec.rejects_negative_exp :
+    (parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOi0xfQ.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8".toList).map
+      (fun t => accept t
+        { allow := ["HS256".toList], now := some 0, required := [],
+          issuer := none, audience := none })
+      = some false := sorry
+
+/-- The same header and signature with claims `{"exp":-0.5}` are
+    accepted at the current time -1, half a second before the
+    expiry. The harness case is "exp a negative fraction -0.5, now
+    -1: accepted". -/
+theorem Spec.accepts_negative_fraction_exp :
+    (parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOi0wLjV9.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8".toList).map
+      (fun t => accept t
+        { allow := ["HS256".toList], now := some (-1), required := [],
+          issuer := none, audience := none })
+      = some true := sorry
+
 /-! ## What acceptance means
 
 The plan's main claim: a token is accepted only when its header
@@ -318,10 +393,12 @@ checks. One statement collects every rule the check applies. -/
     member name; the header has no `crit` member; the header's
     `alg` is a string other than `none` that is on the allowlist;
     every required claim is present; `exp`, `nbf` and `iat`, when
-    present, are numbers the checker reads exactly, with the
-    current time before `exp` and not before `nbf` when a time is
-    given; `iss`, when present, is a string; `aud`, when present,
-    is a string or an array of strings; the issuer is the expected
+    present, are numbers the checker reads with `numVal`, with
+    the current time before `exp` and not before `nbf` under
+    `NumVal.cmp` when a time is given (the statements in the
+    section above say these are the exact decimal values); `iss`,
+    when present, is a string; `aud`, when present, is a string
+    or an array of strings; the issuer is the expected
     one when one is given; and `aud` is absent when no audience is
     expected, or names the expected audience when one is. A
     program that accepts nothing meets this statement; the
