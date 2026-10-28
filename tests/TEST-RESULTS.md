@@ -10,7 +10,7 @@ Written by `python3 tests/run_tests.py`, which drives the built tool `.lake/buil
 ## The oracle and PyJWT
 
 Verdicts come from the oracle, which reimplements the SPEC.md rules in Python. PyJWT 2.15.1 built 20 tokens (HS256, RS256, ES256, and none algorithms), kept in tests/pyjwt_corpus.json with PyJWT's own unverified decode of each. The harness reads that file, so it needs no PyJWT to run; to rebuild the corpus, make a virtual environment from tests/requirements.txt and run tests/make_pyjwt_corpus.py (README, How to run it).
-PyJWT's decode was compared with the oracle's parse on 20 tokens: 20 agreements, 0 differences.
+PyJWT's decode was compared with the oracle's parse on 20 tokens: 20 agreements, 0 differences. No decode difference is named, so any difference is a failure.
 
 ## PyJWT verdicts on the probe tokens
 

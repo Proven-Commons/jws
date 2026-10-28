@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Test harness for the JWS compact parser and checker.
 
-Three parts, matching the slice plan:
+Every input is a request line for the built tool, and the
+expected answer comes from an oracle that reimplements SPEC.md in
+Python. The inputs come in six groups:
 
 1. Fixed cases: the RFC 7515 Appendix A examples (A.1 HS256,
    A.2 RS256, A.3 ES256, A.5 the unsecured none example; the
@@ -9,30 +11,45 @@ Three parts, matching the slice plan:
    token, so the A.1 cases cover it), each with contexts that
    accept and contexts that reject. The A.1 token with its
    signature part emptied, under an otherwise passing context,
-   is a fixed reject case.
+   is a fixed reject case, and A.4, whose payload is not JSON,
+   is a fixed reject case (a named departure). The RFC 7515 A.1
+   HMAC is checked on the tool's answer to each accepted A.1
+   case.
 
-2. Differential: tokens built with PyJWT (read from the committed
-   corpus tests/pyjwt_corpus.json, which tests/make_pyjwt_corpus.py
-   builds from the pinned tests/requirements.txt), plus hand built
-   tokens and a seeded random corpus, each run under several check
-   contexts. Every verdict (and, on acceptance, the token text the
-   tool answers with) is compared against an oracle that
-   reimplements SPEC.md in Python. PyJWT also cross checks the
-   parsing: its own unverified decode of each token it built, kept
-   in the corpus, is compared with the oracle's parse.
+2. Mutations and named cases: padding added, characters outside
+   the alphabet, two or four parts, a header that is not an
+   object, alg missing, alg none with an empty signature, exp
+   and nbf equal to now, fractional and negative dates,
+   audience arrays that do and do not hold the expected value,
+   repeated names, crit, and more. Several of these are the
+   single inputs the theorems in Spec.lean pin, by name.
 
-3. Mutations and malformed requests: padding added, characters
-   outside the alphabet, two or four parts, a header that is not
-   an object, alg missing, alg none with an empty signature,
-   exp equal to now, nbf equal to now, audience arrays that do
-   and do not hold the expected value, fractional dates, and
-   more; plus request lines that must be answered with `error`.
+3. Malformed requests that must be answered with `error`.
 
-The oracle is the authority for verdicts. PyJWT never decides a
-verdict here: it builds well formed tokens and cross checks
-decoding, because its own checks differ from this slice's rules
-(it verifies signatures and registered claims its own way when
-asked, and accepts some framings this slice turns away).
+4. PyJWT-built tokens, read from the committed corpus
+   tests/pyjwt_corpus.json (which tests/make_pyjwt_corpus.py
+   builds from the pinned tests/requirements.txt), each run
+   under five contexts. PyJWT's own unverified decode of each
+   token, kept in the corpus, is compared with the oracle's
+   parse; any difference fails the run (none is named).
+
+5. PyJWT verdict probes: HS256 tokens signed with a known key,
+   with PyJWT's own verdict (jwt.decode with that key and the
+   probe's context) kept in the corpus. The expected verdict is
+   still the oracle's. PyJWT's is compared beside it: every
+   disagreement must be one of the differences named in
+   PYJWT_NAMED, with its reason, and an unnamed disagreement,
+   or a named one that no longer differs, fails the run.
+
+6. Two seeded corpora: random tokens and contexts (seed SEED),
+   and a corpus of the shapes the rules turn on (seed SEED + 1):
+   repeated names, crit, whitespace and CR LF, escapes,
+   fractional dates, and aud.
+
+The oracle decides every expected verdict. PyJWT never does: its
+own checks differ from this slice's rules in the named ways, so
+its decodes and its probe verdicts are compared beside the
+oracle's, and only the named differences are allowed.
 
 Run: python3 tests/run_tests.py (uses .lake/build/bin/jws; needs
 only the Python standard library). Writes tests/TEST-RESULTS.md
@@ -1142,6 +1159,12 @@ def main():
 
     failures += compare_probes(verdicts)
 
+    # A PyJWT decode that differs from the oracle's parse fails the
+    # run: no decode difference is named.
+    for tok in PYJWT_INFO["decode_differences"]:
+        failures.append(("pyjwt decode of %s... (differs from the oracle's"
+                         " parse, unnamed)" % tok, "differs", "same"))
+
     fixed = [c for c in CASES if c[0].startswith("A.")]
     fixed_fail = [f for f in failures if f[0].startswith("A.")]
 
@@ -1175,6 +1198,8 @@ def main():
                      " it)." % (PYJWT_INFO["version"], PYJWT_INFO["tokens"]))
     lines_out.append("PyJWT's decode was compared with the oracle's"
                      " parse on %d tokens: %d agreements, %d differences."
+                     " No decode difference is named, so any difference"
+                     " is a failure."
                      % (PYJWT_INFO["decode_comparisons"],
                         PYJWT_INFO["decode_agreements"],
                         len(PYJWT_INFO["decode_differences"])))
