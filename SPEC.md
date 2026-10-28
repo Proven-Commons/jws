@@ -121,13 +121,26 @@ The token is accepted only when every rule holds:
 16. When an expected audience is given, `aud` must be that
     string, or an array holding that string as a member. A
     missing `aud` rejects.
+17. Neither the header object nor the claims object repeats a
+    member name. Names are compared after JSON unescaping, so
+    `"alg"` and `"\u0061lg"` are the same name. RFC 7515 section 4
+    (and step 4 of section 5.2) lets a reader either turn away a
+    header that repeats a parameter name or use only the last
+    copy, and RFC 7519 section 4 says the same for claim names;
+    this slice turns the token away, whatever the repeated name
+    and whichever copy would have passed. Members of objects
+    nested inside the header or the claims (for example the
+    value of a private claim that is itself an object) are not
+    checked for repeats: no rule reads a member of a nested
+    object.
 
 When no current time is supplied, rules 10 and 11 are skipped;
 every other rule, including the type rule 9, still applies.
 
-Names are read from objects with the JSON code's lookup: when a
-name appears more than once in an object, the first copy is the
-one read.
+Names are read from objects with the JSON code's lookup. By
+rule 17 an accepted token's two objects hold each name at most
+once, so the copy read is the only copy. The parser itself keeps
+every pair as written; only the check turns repeats away.
 
 ## Model and printing
 
@@ -206,3 +219,6 @@ and `Jws.accept` the command line tool calls; the tests in
 | A token whose algorithm is outside the allowlist is refused (rule 7) | `Spec.rejects_alg_outside_allowlist` |
 | A token with a part that is not strict base64url does not parse | `Spec.rejects_part_not_base64url` |
 | A token whose header is not a JSON object is refused (rule 3) | `Spec.rejects_header_not_object` |
+| An accepted token's header and claims are objects that repeat no member name (rules 3, 4, 17) | `Spec.accept_names_unique` |
+| The token with header `{"alg":"HS256","alg":"none"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_alg` |
+| The token with claims `{"iss":"joe","exp":2000000000,"iss":"evil"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_iss` |

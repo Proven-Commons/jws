@@ -11,6 +11,7 @@
 import Jws
 import Proofs.Token
 import Proofs.B64
+import Proofs.Check
 
 open Jws
 
@@ -112,3 +113,22 @@ theorem Spec.rejects_header_not_object :
            required := [], issuer := none, audience := none }
      | none => false) = false := by
   decide +kernel
+
+
+theorem Spec.accept_names_unique (t : Token) (ctx : Context)
+    (h : accept t ctx = true) :
+    ∃ hkvs ckvs, t.header = .obj hkvs ∧ t.claims = .obj ckvs ∧
+      (hkvs.map Prod.fst).Nodup ∧ (ckvs.map Prod.fst).Nodup :=
+  Jws.Proofs.accept_names_unique t ctx h
+
+theorem Spec.rejects_duplicate_alg (ctx : Context) :
+    ∃ t, parseToken
+      "eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID".toList
+        = some t ∧ accept t ctx = false :=
+  Jws.Proofs.refused_of_names _ ctx (by decide +kernel)
+
+theorem Spec.rejects_duplicate_iss (ctx : Context) :
+    ∃ t, parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImlzcyI6ImV2aWwifQ.AQID".toList
+        = some t ∧ accept t ctx = false :=
+  Jws.Proofs.refused_of_names _ ctx (by decide +kernel)

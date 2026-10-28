@@ -86,6 +86,9 @@ where they end in `sorry`) and proved in
 | The A.1 token is refused when its algorithm, HS256, is outside the allowlist (RS256 alone). | `Spec.rejects_alg_outside_allowlist` |
 | A token whose first part carries a padding character does not parse: `=` is not in the base64url alphabet. | `Spec.rejects_part_not_base64url` |
 | A token whose header part decodes to a JSON array, not an object, is refused. | `Spec.rejects_header_not_object` |
+| When the check accepts a token, under any context, its header and its claims are JSON objects and neither repeats a member name. | `Spec.accept_names_unique` |
+| The token `eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","alg":"none"}`, parses and is refused under every context. | `Spec.rejects_duplicate_alg` |
+| The token whose claims are `{"iss":"joe","exp":2000000000,"iss":"evil"}` (header `{"alg":"HS256"}`, signature bytes 01 02 03) parses and is refused under every context. | `Spec.rejects_duplicate_iss` |
 
 The token round trip rests on the proofs in
 `Proofs/Token.lean`, where it is
@@ -116,6 +119,9 @@ directly, the same functions the theorems are about.
 
 ## What is not proved
 
+- Repeated names inside objects nested in the header or
+  the claims: the check does not look for them (see
+  below), and no theorem covers them.
 - That the checker accepts exactly the tokens `SPEC.md`
   says it should, beyond the single inputs the theorems
   above pin. The acceptance rules live in one function
@@ -153,8 +159,14 @@ pinned by tests:
   none case never reaches acceptance. The theorem
   `Spec.rejects_empty_signature` pins the emptied
   signature on the RFC's own A.1 token.
-- When a JSON object repeats a name, lookup reads the
-  first copy, as the JSON code's lookup does.
+- A header or claims object that repeats a member name
+  is turned away (`SPEC.md` rule 17), whichever copy
+  would have passed: RFC 7515 section 4 and RFC 7519
+  section 4 allow a reader only that or reading the last
+  copy. `Spec.accept_names_unique` proves it for every
+  accepted token. Objects nested inside the header or the
+  claims are not checked for repeated names, because no
+  rule reads a member of a nested object.
 
 ## What you must trust
 

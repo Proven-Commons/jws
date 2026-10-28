@@ -189,13 +189,23 @@ def json_print(v):
 
 
 def lookup(name, obj):
-    """First copy wins, as in the Lean code."""
+    """The member of that name. The oracle reads names only from
+    objects it has found to repeat no name (names_unique below), as
+    the Lean check does, so the copy found is the only copy."""
     if obj[0] != "obj":
         return None
     for (k, v) in obj[1]:
         if k == name:
             return v
     return None
+
+
+def names_unique(obj):
+    """No member name of the object appears twice (SPEC rule 17).
+    Names are compared after JSON unescaping, so "\\u0061lg" and
+    "alg" are the same name."""
+    names = [k for (k, _) in obj[1]]
+    return len(set(names)) == len(names)
 
 
 NUM_RE = re.compile(r"^-?(0|[0-9]+)(\.[0-9]+)?([eE][+-]?[0-9]+)?$")
@@ -257,6 +267,10 @@ def oracle_check(token_text, now, allow, required, issuer, audience):
     if header is None or claims is None:
         return None
     if header[0] != "obj" or claims[0] != "obj":
+        return None
+    if not names_unique(header) or not names_unique(claims):
+        # A repeated member name in either object turns the token
+        # away (SPEC rule 17; RFC 7515 section 4, RFC 7519 section 4).
         return None
     alg = lookup("alg", header)
     if alg is None or alg[0] != "str":
@@ -579,14 +593,54 @@ add_check("mutation: expected issuer, iss missing (reject)",
 add_check("required claim of number type still counts as present",
           claims_token(b'{"foo":42,"exp":2000000000}'),
           NOW, ["HS256"], ["foo"], None, None)
-add_check("duplicate iss: the first copy is the one read (accept joe)",
+# Repeated member names: refused whichever copy a reader would take
+# (SPEC rule 17). These cases pinned the old first-copy reading as
+# accepts; review 1 item 1 asked for them to be refused.
+add_check("duplicate iss (joe then bob): refused, issuer joe",
           claims_token(b'{"iss":"joe","iss":"bob","exp":2000000000}'),
           NOW, ["HS256"], [], "joe", None)
-add_check("duplicate iss: the second copy is not read (reject bob)",
+add_check("duplicate iss (joe then bob): refused, issuer bob",
           claims_token(b'{"iss":"joe","iss":"bob","exp":2000000000}'),
           NOW, ["HS256"], [], "bob", None)
-add_check("duplicate alg: the first copy is the one read",
+add_check("duplicate iss (joe then evil): refused",
+          "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImlzcyI6"
+          "ImV2aWwifQ.AQID",
+          NOW, ["HS256"], [], "joe", None)
+add_check("duplicate alg (HS256 then none): refused",
+          "eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID",
+          NOW, ["HS256"], [], None, None)
+add_check("duplicate alg (HS256 then none, longer signature): refused",
           hand_token(b'{"alg":"HS256","alg":"none"}', GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("duplicate alg (none then HS256): refused",
+          hand_token(b'{"alg":"none","alg":"HS256"}', GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("duplicate alg (HS256 then RS256), HS256 allowed: refused",
+          hand_token(b'{"alg":"HS256","alg":"RS256"}', GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("duplicate alg, same value twice: refused",
+          hand_token(b'{"alg":"HS256","alg":"HS256"}', GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("duplicate alg spelled with an escape: refused",
+          hand_token(b'{"alg":"HS256","\\u0061lg":"none"}', GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("duplicate kid in the header: refused",
+          hand_token(b'{"alg":"HS256","kid":"a","kid":"b"}', GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("duplicate exp (live then expired): refused",
+          claims_token(b'{"exp":2000000000,"exp":1000000000}'),
+          NOW, ["HS256"], [], None, None)
+add_check("duplicate exp (expired then live): refused",
+          claims_token(b'{"exp":1000000000,"exp":2000000000}'),
+          NOW, ["HS256"], [], None, None)
+add_check("duplicate aud: refused",
+          claims_token(b'{"aud":"api","exp":2000000000,"aud":"web"}'),
+          NOW, ["HS256"], [], None, "api")
+add_check("duplicate name nobody reads (foo): refused",
+          claims_token(b'{"foo":1,"exp":2000000000,"foo":2}'),
+          NOW, ["HS256"], [], None, None)
+add_check("repeated name inside a nested object, not read: accepted",
+          claims_token(b'{"exp":2000000000,"ctx":{"a":1,"a":2}}'),
           NOW, ["HS256"], [], None, None)
 add_check("payload whitespace and key order kept in the reprint",
           claims_token(b'{ "exp" : 2000000000 , "iss" : "joe" }'),
@@ -869,9 +923,18 @@ def main():
                      " otherwise passing context and expects rejection,"
                      " and generated corpus tokens with empty signature"
                      " parts follow the same new rule in the oracle.")
-    lines_out.append("- Claim and header name lookup reads the first copy"
-                     " of a repeated name (the JSON code's List.lookup"
-                     " order). The duplicate iss and alg cases pin this.")
+    lines_out.append("- Named change from review 1 item 1: a header or"
+                     " claims object that repeats a member name is"
+                     " turned away (SPEC rule 17; RFC 7515 section 4 and"
+                     " RFC 7519 section 4 allow only that or reading the"
+                     " last copy). The earlier reading took the first"
+                     " copy; the fixed cases that pinned it (duplicate"
+                     " iss, duplicate alg) now expect refusal, and new"
+                     " cases cover duplicate exp, aud, kid, a name that"
+                     " is never read, and a name spelled with a JSON"
+                     " escape. Names inside nested objects are not"
+                     " checked, since the slice reads no member of a"
+                     " nested object; a fixed case pins that.")
     lines_out.append("- The none rule is the exact name `none`. An alg of"
                      " `None` is a different name and can be allowed.")
     lines_out.append("- Date claims are judged by value, not by spelling:"

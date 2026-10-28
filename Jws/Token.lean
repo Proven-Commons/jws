@@ -178,14 +178,22 @@ def NumVal.cmp (a b : NumVal) : Ordering :=
   else if sa = 1 then magCmp a b
   else magCmp b a
 
-/-- Look a name up in the members of a JSON object. When a name
-    appears more than once, the first copy is the one found, as
-    in the JSON code. Anything that is not an object has no
-    members. -/
+/-- Look a name up in the members of a JSON object. Anything that
+    is not an object has no members. The check below reads names
+    only from objects it has first found to repeat no name (see
+    `namesUnique`), so the copy found is the only copy. -/
 def lookup (name : List Char) (j : Json) : Option Json :=
   match j with
   | .obj kvs => kvs.lookup name
   | _ => none
+
+/-- Whether no name in the list appears twice. RFC 7515 section 4
+    and RFC 7519 section 4 ask that the header and the claims set
+    repeat no member name; the check turns away an object that
+    does (see `accept`). -/
+def namesUnique : List (List Char) → Bool
+  | [] => true
+  | n :: ns => !ns.contains n && namesUnique ns
 
 /-- The state of one date claim (exp, nbf, iat) in a claims set:
     absent, present but not a whole number of seconds (a
@@ -253,7 +261,9 @@ def accept (t : Token) (ctx : Context) : Bool :=
   if ctx.allow.contains "none".toList then false
   else
     match t.header, t.claims with
-    | .obj _, .obj _ =>
+    | .obj hkvs, .obj ckvs =>
+      namesUnique (hkvs.map Prod.fst) &&
+      namesUnique (ckvs.map Prod.fst) &&
       match lookup "alg".toList t.header with
       | some (.str alg) =>
         alg != "none".toList &&

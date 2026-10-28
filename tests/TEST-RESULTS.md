@@ -4,7 +4,7 @@ Written by `python3 tests/run_tests.py`, which drives the built tool `.lake/buil
 
 - Oracle: the SPEC.md rules reimplemented in tests/run_tests.py (Python 3.13), with tokens and decodes from PyJWT 2.15.1 (cryptography 46.0.3)
 - Seed: 20261026
-- Inputs: 426
+- Inputs: 438
 - Failures: 0
 
 ## The oracle and PyJWT
@@ -14,9 +14,9 @@ PyJWT's decode was compared with the oracle's parse on 20 tokens: 20 agreements,
 
 ## Counts
 
-- Total check and request inputs: 426
-- Agreements with the oracle: 426
-- Of the verdict cases: 53 accepted, 363 rejected, 10 malformed requests answered error
+- Total check and request inputs: 438
+- Agreements with the oracle: 438
+- Of the verdict cases: 52 accepted, 376 rejected, 10 malformed requests answered error
 
 ## RFC 7515 fixed cases
 
@@ -42,7 +42,7 @@ The A.5 example is the RFC's unsecured (alg none) compact example; in the final 
 ## Named differences and pinned readings
 
 - Named change from the 2026-10-27 review: an empty signature part is now always turned away (SPEC rule 2). RFC 7515 never produces an empty signature for a signing algorithm, and alg none is turned away on its own, so the none case never reaches acceptance. The earlier reading accepted an empty signature part for a signing algorithm. The fixed case that pinned that reading now expects rejection, a new fixed case empties the A.1 token's signature part under an otherwise passing context and expects rejection, and generated corpus tokens with empty signature parts follow the same new rule in the oracle.
-- Claim and header name lookup reads the first copy of a repeated name (the JSON code's List.lookup order). The duplicate iss and alg cases pin this.
+- Named change from review 1 item 1: a header or claims object that repeats a member name is turned away (SPEC rule 17; RFC 7515 section 4 and RFC 7519 section 4 allow only that or reading the last copy). The earlier reading took the first copy; the fixed cases that pinned it (duplicate iss, duplicate alg) now expect refusal, and new cases cover duplicate exp, aud, kid, a name that is never read, and a name spelled with a JSON escape. Names inside nested objects are not checked, since the slice reads no member of a nested object; a fixed case pins that.
 - The none rule is the exact name `none`. An alg of `None` is a different name and can be allowed.
 - Date claims are judged by value, not by spelling: `2.0e9` and `20000000000e-1` are the whole number 2000000000, and `1e999999999` compares without ever being written out.
 - PyJWT decode differences (its parser against the oracle's on well formed tokens): 0.

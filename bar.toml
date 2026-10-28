@@ -28,7 +28,7 @@ code = [
   "Jws.Context", "Jws.Context.mk", "Jws.Context.allow", "Jws.Context.now",
   "Jws.Context.required", "Jws.Context.issuer", "Jws.Context.audience",
   "Jws.ClaimDate", "Jws.ClaimDate.absent",
-  "Jws.ClaimDate.bad", "Jws.ClaimDate.ok", "Jws.lookup",
+  "Jws.ClaimDate.bad", "Jws.ClaimDate.ok", "Jws.lookup", "Jws.namesUnique",
   "Jws.dateClaim", "Jws.issShapeOk", "Jws.audShapeOk", "Jws.audOk",
   "Jws.accept",
   # Base64url, strict, no padding.

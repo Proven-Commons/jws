@@ -157,3 +157,38 @@ theorem Spec.rejects_header_not_object :
          { allow := ["HS256".toList], now := some 1500000000,
            required := [], issuer := none, audience := none }
      | none => false) = false := sorry
+
+/-! ## Repeated member names
+
+RFC 7515 section 4 (and step 4 of section 5.2) asks a reader of a
+header that repeats a parameter name either to turn it away or to
+use the last copy; RFC 7519 section 4 asks the same of the claims
+set. This slice turns such a token away. -/
+
+/-- An accepted token has a JSON object for its header and for its
+    claims, and neither object repeats a member name. Members of
+    objects nested inside them are not covered. -/
+theorem Spec.accept_names_unique (t : Token) (ctx : Context)
+    (h : accept t ctx = true) :
+    ∃ hkvs ckvs, t.header = .obj hkvs ∧ t.claims = .obj ckvs ∧
+      (hkvs.map Prod.fst).Nodup ∧ (ckvs.map Prod.fst).Nodup := sorry
+
+/-- The token whose header is `{"alg":"HS256","alg":"none"}`, with
+    claims `{"exp":2000000000}` and signature bytes 01 02 03,
+    parses (the parser keeps both copies) and is refused under
+    every context. The harness case is "duplicate alg (HS256 then
+    none): refused". -/
+theorem Spec.rejects_duplicate_alg (ctx : Context) :
+    ∃ t, parseToken
+      "eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID".toList
+        = some t ∧ accept t ctx = false := sorry
+
+/-- The token whose claims are
+    `{"iss":"joe","exp":2000000000,"iss":"evil"}`, under the header
+    `{"alg":"HS256"}` and signature bytes 01 02 03, parses and is
+    refused under every context. The harness case is "duplicate
+    iss (joe then evil): refused". -/
+theorem Spec.rejects_duplicate_iss (ctx : Context) :
+    ∃ t, parseToken
+      "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImlzcyI6ImV2aWwifQ.AQID".toList
+        = some t ∧ accept t ctx = false := sorry
