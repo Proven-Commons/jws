@@ -12,13 +12,15 @@ reads the three base64url parts, keeps the first two
 exactly as received (they are the signing input a
 signature verifier needs), decodes the header and payload
 as JSON, and holds the signature bytes unchanged. The
-checker runs the shape and claims rules of `SPEC.md`: the algorithm against a caller
+checker runs the shape and claims rules of `SPEC.md`: no
+repeated member names in the header or the claims, no
+`crit` in the header, the algorithm against a caller
 allowlist, the required claims, and the `exp`, `nbf`,
 `iss`, and `aud` claims against a context the caller
-supplies. The definitions are in `Jws/Base64url.lean` (the
-base64url codec), `Jws/Utf8.lean` (a strict UTF-8 codec),
-and `Jws/Token.lean` (the framing, the claims reading, and
-the checker). The JSON parser, printer, value type, and
+supplies. The definitions are in `Jws/Base64url.lean`
+(the base64url codec), `Jws/Utf8.lean` (a strict UTF-8
+codec), and `Jws/Token.lean` (the framing, the claims
+reading, and the checker). The JSON parser, printer, value type, and
 round trip proof are the json repo's, carried in unchanged
 under `Json/` and `Proofs/RoundTrip.lean`, because the
 repos in this org do not import each other. The rules are
@@ -65,11 +67,16 @@ python3 tests/run_tests.py
 
 `python3 tests/run_tests.py` runs the fixed RFC 7515
 Appendix A cases, the mutation cases, the malformed
-request cases, and the differential corpus against an
-oracle implementing the same rules, and writes the
-counts to `tests/TEST-RESULTS.md`. It needs only the
-Python standard library. The tokens PyJWT built for the
-corpus are committed in `tests/pyjwt_corpus.json`, so
+request cases, a seeded random corpus, and a seeded
+corpus of the shapes the rules turn on (repeated names,
+`crit`, whitespace and CR LF, escapes, fractional dates,
+`aud`), each against an oracle implementing the same
+rules. It also runs tokens PyJWT built, and HS256 probe
+tokens on which PyJWT gave its own verdict, compared
+beside the oracle's with every difference named. It
+writes the counts to `tests/TEST-RESULTS.md` and needs
+only the Python standard library: the PyJWT tokens and
+verdicts are committed in `tests/pyjwt_corpus.json`, so
 every run reads the same inputs. To rebuild that file
 with the pinned PyJWT and cryptography:
 
@@ -106,12 +113,12 @@ where they end in `sorry`) and proved in
 | When the check accepts a token, under any context, its header and its claims are JSON objects and neither repeats a member name. | `Spec.accept_names_unique` |
 | The token `eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","alg":"none"}`, parses and is refused under every context. | `Spec.rejects_duplicate_alg` |
 | The token whose claims are `{"iss":"joe","exp":2000000000,"iss":"evil"}` (header `{"alg":"HS256"}`, signature bytes 01 02 03) parses and is refused under every context. | `Spec.rejects_duplicate_iss` |
+| When the check accepts a token, under any context, its header is a JSON object with no `crit` member. | `Spec.accept_no_crit` |
+| The token `eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","b64":false,"crit":["b64"]}`, parses and is refused under every context. | `Spec.rejects_crit_b64` |
 | The token `eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.AQID`, whose claims are `{"exp":2000000000.5}`, parses and is accepted at the current time 2000000000 with HS256 allowed: a fractional expiry is compared exactly. | `Spec.accepts_fractional_exp_before` |
 | The same token is refused at the current time 2000000001, after it expired. | `Spec.rejects_fractional_exp_after` |
 | The token `eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.AQID`, whose claims are `{"iss":"joe","exp":2000000000,"aud":"other-tenant"}`, parses and is refused when HS256 is allowed, the current time is 1500000000, the issuer must be `joe`, and no audience is expected. | `Spec.rejects_aud_without_audience` |
 | The same token is accepted under the same context when the expected audience is `other-tenant`. | `Spec.accepts_aud_with_audience` |
-| When the check accepts a token, under any context, its header is a JSON object with no `crit` member. | `Spec.accept_no_crit` |
-| The token `eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","b64":false,"crit":["b64"]}`, parses and is refused under every context. | `Spec.rejects_crit_b64` |
 
 The token theorems rest on the proofs in
 `Proofs/Token.lean`. The print of a parsed token is the
@@ -128,11 +135,16 @@ and the base64url round trip. The base64url layer proves
 both directions: `Spec.decode_encode` above, and the
 reverse, encoding a decoding gives the text back
 (`Jws.Base64url.Proofs.encode_decode`, in
-`Proofs/B64.lean`). The single token theorems are single
-inputs checked in the kernel with `decide +kernel`, each
-one a named fixed case in the test harness, run through
+`Proofs/B64.lean`). The theorems about acceptance are
+proved in `Proofs/Check.lean`. The single token theorems
+are named fixed cases in the test harness, run through
 the same `Jws.parseToken` and `Jws.accept` the command
-line tool calls.
+line tool calls. Those with one context are checked in
+the kernel with `decide +kernel`; those that hold under
+every context combine a kernel-checked computation on the
+token with `Jws.Proofs.accept_false_of_shape`, which says
+that a token failing the context-free shape rules is
+refused under every context.
 
 Every theorem above checks against the standard three
 axioms only (`propext`, `Classical.choice`, `Quot.sound`):
@@ -242,18 +254,19 @@ pinned by tests:
   puts in place of some definitions the proofs reason
   about.
 - The operating system the program runs on.
-- That `SPEC.md` states the reading of RFC 7515 you
-  intend. The proofs are about the parser and checker in
+- That `SPEC.md` states the reading of RFC 7515 and RFC
+  7519 you intend. The proofs are about the parser and checker in
   this repo following the statements exactly; the
   fidelity of the spec to the RFC is a reading, pinned
   in `SPEC.md` where the RFC leaves a choice open.
 - The oracle in `tests/run_tests.py`, written from
   `SPEC.md`, and PyJWT and cryptography (pinned in
-  `tests/requirements.txt`), which built the tokens in
-  `tests/pyjwt_corpus.json`. Both are evidence, not proof:
-  PyJWT builds well formed tokens and cross checks
-  decoding only, and verdicts never come from PyJWT. The
-  results file names the versions used.
+  `tests/requirements.txt`), which built the tokens and
+  gave the probe verdicts in `tests/pyjwt_corpus.json`.
+  Both are evidence, not proof. The expected verdicts are
+  the oracle's; PyJWT's decodes and its verdicts on the
+  probe tokens are compared beside them, and the results
+  file names each difference and the versions used.
 - The line handling in `Main.lean` (splitting a request
   line, reading the six fields and their decimal codes,
   and the partial IO loop that reads lines until the
@@ -272,12 +285,13 @@ pinned by tests:
    accepted by Lean's kernel and every other kernel
    shipped with Lean.
 2. `python3 tests/run_tests.py`: the fixed RFC cases,
-   the mutation cases, the malformed request cases, and
-   the differential corpus, with counts and any failures
-   written to `tests/TEST-RESULTS.md`. The harness reads
-   the PyJWT tokens from `tests/pyjwt_corpus.json` and
+   the mutation cases, the malformed request cases, the
+   two seeded corpora, and the PyJWT tokens and probe
+   verdicts, with counts and any failures written to
+   `tests/TEST-RESULTS.md`. The harness reads the PyJWT
+   tokens and verdicts from `tests/pyjwt_corpus.json` and
    needs no library beyond Python's own.
 3. `lake build`: the libraries, the proofs, and the tool
    build clean.
-4. Read `SPEC.md` against RFC 7515 and check the pinned
-   readings are the ones you want.
+4. Read `SPEC.md` against RFC 7515 and RFC 7519 and check
+   the pinned readings are the ones you want.

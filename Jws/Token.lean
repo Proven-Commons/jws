@@ -9,11 +9,14 @@ import Jws.Utf8
   Part three is the signature bytes.
 
   This slice parses the compact form and runs the plan's checks:
-  the algorithm against a caller allowlist, the required claims,
-  and the exp, nbf, iss, and aud claims against a context the
-  caller supplies. It does not verify the signature; a token that
-  passes these checks is not thereby verified. Signature
-  verification belongs to the second slice.
+  no repeated member names in the header or the claims, no `crit`
+  in the header, the algorithm against a caller allowlist, the
+  required claims, and the exp, nbf, iss, and aud claims against
+  a context the caller supplies. The payload must be JSON: this
+  slice reads JWTs (RFC 7519), whose payload is a claims set. It
+  does not verify the signature; a token that passes these checks
+  is not thereby verified. Signature verification belongs to the
+  second slice.
 
   The JSON code is the json repo's, carried in unchanged (the
   repos in this org do not import each other): `Json.parse` reads

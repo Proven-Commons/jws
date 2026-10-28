@@ -278,9 +278,9 @@ input theorems and the tests.
 | An accepted token's header and claims are objects that repeat no member name (rules 3, 4, 17) | `Spec.accept_names_unique` |
 | The token with header `{"alg":"HS256","alg":"none"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_alg` |
 | The token with claims `{"iss":"joe","exp":2000000000,"iss":"evil"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_iss` |
+| An accepted token's header has no `crit` member (rule 18) | `Spec.accept_no_crit` |
+| The token with header `{"alg":"HS256","b64":false,"crit":["b64"]}` parses and is refused under every context (rule 18) | `Spec.rejects_crit_b64` |
 | A token with `exp` 2000000000.5 is accepted at 2000000000 (rules 9, 10) | `Spec.accepts_fractional_exp_before` |
 | The same token is refused at 2000000001 (rules 9, 10) | `Spec.rejects_fractional_exp_after` |
 | A token carrying `aud` is refused when no audience is expected (rule 16) | `Spec.rejects_aud_without_audience` |
 | The same token is accepted when its audience is the expected one | `Spec.accepts_aud_with_audience` |
-| An accepted token's header has no `crit` member (rule 18) | `Spec.accept_no_crit` |
-| The token with header `{"alg":"HS256","b64":false,"crit":["b64"]}` parses and is refused under every context (rule 18) | `Spec.rejects_crit_b64` |
