@@ -288,12 +288,12 @@ input theorems and the tests.
 | The RFC 7515 A.1 token is accepted under its allowlist with no time checks and the issuer checked | `Spec.accepts_rfc_a1` |
 | The harness's hand built token is accepted under its base context | `Spec.accepts_hand_built` |
 | The RFC 7515 A.5 unsecured token is refused under an HS256 allowlist | `Spec.rejects_unsecured_none` |
-| The A.5 token is refused when the allowlist names `none` | `Spec.rejects_unsecured_none_when_allowlist_names_none` |
+| The A.5 token is refused when the allowlist names `none`; every context whose allowlist names `none` refuses every token (rule 6) | `Spec.rejects_unsecured_none_when_allowlist_names_none`, `Spec.accept_sound` |
 | The A.5 token is refused when the allowlist names `none` alongside HS256 | `Spec.rejects_unsecured_none_when_allowlist_mixes_none` |
-| A token with an empty signature part is refused (rule 2) | `Spec.rejects_empty_signature` |
-| A token whose algorithm is outside the allowlist is refused (rule 7) | `Spec.rejects_alg_outside_allowlist` |
-| A token with a part that is not strict base64url does not parse | `Spec.rejects_part_not_base64url` |
-| A token whose header is not a JSON object is refused (rule 3) | `Spec.rejects_header_not_object` |
+| The A.1 token with its signature part emptied is refused; every accepted token has a non-empty signature (rule 2) | `Spec.rejects_empty_signature`, `Spec.accept_sound` |
+| The A.1 token is refused under an allowlist without HS256; every accepted token's `alg` is on the allowlist (rule 7) | `Spec.rejects_alg_outside_allowlist`, `Spec.accept_sound` |
+| The hand built token with `=` after its first part does not parse; every part of a parsed token is the canonical, unpadded base64url encoding of its bytes (rule 1) | `Spec.rejects_part_not_base64url`, `Spec.parseToken_reads`, `Spec.encode_decode` |
+| The hand built token whose header is the JSON array `["HS256"]` is refused; every accepted token's header is a JSON object (rule 3) | `Spec.rejects_header_not_object`, `Spec.accept_sound` |
 | An accepted token meets rules 2 to 18, the date comparisons as `Jws.NumVal.cmp` makes them (proved exact by `Spec.numVal_cmp_now`) | `Spec.accept_sound` |
 | An accepted token's header and claims are objects that repeat no member name (rules 3, 4, 17) | `Spec.accept_names_unique` |
 | The token with header `{"alg":"HS256","alg":"none"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_alg` |
