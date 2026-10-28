@@ -279,41 +279,75 @@ theorem expValue_plain (ec d : Char) (ds : List Char) (n1 : d ≠ '-') (n2 : d �
   · rename_i heq; simp at heq; exact absurd heq.2.1 n2
   · rename_i heq; simp at heq; rw [heq.2]
 
+/-! The exponent step, one lemma per sign. Each states its sign
+    character in the text itself rather than as `sgn ++ _` with `sgn`
+    substituted: the nanoda kernel overflows its stack when it has to
+    reduce a match on a literal character reached through `++`. -/
+
+/-- `numVal`'s exponent step on an unsigned exponent. -/
+theorem withExp_none (neg : Bool) (ids fds : List Char) (ec d : Char) (ds : List Char)
+    (hd : Json.IsDigit d) (hds : ∀ x ∈ ds, Json.IsDigit x) :
+    numVal.withExp neg ids fds (d :: ds) =
+      some (mkNumVal neg (digitsVal (ids ++ fds)) (expValue (ec :: d :: ds) - fds.length)) := by
+  obtain ⟨n1, n2, -, -, -⟩ := ne_of_dig hd
+  have hsp := span_digits d ds hd hds
+  unfold numVal.withExp
+  split
+  rename_i heq
+  split at heq
+  · rename_i hc; simp at hc; exact absurd hc.1 n1
+  · rename_i hc; simp at hc; exact absurd hc.1 n2
+  · simp only [Prod.mk.injEq] at heq
+    obtain ⟨rfl, rfl⟩ := heq
+    rw [hsp]
+    simp [expValue_plain ec d ds n1 n2, digitsVal_eq]
+
+/-- `numVal`'s exponent step on an exponent after `-`. -/
+theorem withExp_minus (neg : Bool) (ids fds : List Char) (ec d : Char) (ds : List Char)
+    (hd : Json.IsDigit d) (hds : ∀ x ∈ ds, Json.IsDigit x) :
+    numVal.withExp neg ids fds ('-' :: d :: ds) =
+      some (mkNumVal neg (digitsVal (ids ++ fds)) (expValue (ec :: '-' :: d :: ds) - fds.length)) := by
+  have hsp := span_digits d ds hd hds
+  unfold numVal.withExp
+  split
+  rename_i heq
+  split at heq
+  · rename_i hc; simp at hc
+    simp only [Prod.mk.injEq] at heq
+    obtain ⟨rfl, rfl⟩ := heq
+    rw [← hc, hsp]
+    simp [expValue, digitsVal_eq]
+  · rename_i hc; simp at hc
+  · rename_i hc1 _; exact absurd (hc1 (d :: ds) rfl) (by simp)
+
+/-- `numVal`'s exponent step on an exponent after `+`. -/
+theorem withExp_plus (neg : Bool) (ids fds : List Char) (ec d : Char) (ds : List Char)
+    (hd : Json.IsDigit d) (hds : ∀ x ∈ ds, Json.IsDigit x) :
+    numVal.withExp neg ids fds ('+' :: d :: ds) =
+      some (mkNumVal neg (digitsVal (ids ++ fds)) (expValue (ec :: '+' :: d :: ds) - fds.length)) := by
+  have hsp := span_digits d ds hd hds
+  unfold numVal.withExp
+  split
+  rename_i heq
+  split at heq
+  · rename_i hc; simp at hc
+  · rename_i hc; simp at hc
+    simp only [Prod.mk.injEq] at heq
+    obtain ⟨rfl, rfl⟩ := heq
+    rw [← hc, hsp]
+    simp [expValue, digitsVal_eq]
+  · rename_i _ hc2; exact absurd (hc2 (d :: ds) rfl) (by simp)
+
 /-- `numVal`'s exponent step on an exponent part of the grammar. -/
 theorem withExp_eq (neg : Bool) (ids fds : List Char) (ec : Char) (sgn : List Char) (d : Char)
     (ds : List Char) (hs : sgn = [] ∨ sgn = ['-'] ∨ sgn = ['+'])
     (hd : Json.IsDigit d) (hds : ∀ x ∈ ds, Json.IsDigit x) :
     numVal.withExp neg ids fds (sgn ++ d :: ds) =
       some (mkNumVal neg (digitsVal (ids ++ fds)) (expValue (ec :: (sgn ++ d :: ds)) - fds.length)) := by
-  obtain ⟨n1, n2, -, -, -⟩ := ne_of_dig hd
-  have hsp := span_digits d ds hd hds
-  unfold numVal.withExp
-  split
-  rename_i heq
   rcases hs with rfl | rfl | rfl
-  · split at heq
-    · rename_i hc; simp at hc; exact absurd hc.1 n1
-    · rename_i hc; simp at hc; exact absurd hc.1 n2
-    · simp only [List.nil_append, Prod.mk.injEq] at heq
-      obtain ⟨rfl, rfl⟩ := heq
-      rw [hsp]
-      simp [expValue_plain ec d ds n1 n2, digitsVal_eq]
-  · split at heq
-    · rename_i hc; simp at hc
-      simp only [Prod.mk.injEq] at heq
-      obtain ⟨rfl, rfl⟩ := heq
-      rw [← hc, hsp]
-      simp [expValue, digitsVal_eq]
-    · rename_i hc; simp at hc
-    · rename_i hc1 _; exact absurd (hc1 (d :: ds) rfl) (by simp)
-  · split at heq
-    · rename_i hc; simp at hc
-    · rename_i hc; simp at hc
-      simp only [Prod.mk.injEq] at heq
-      obtain ⟨rfl, rfl⟩ := heq
-      rw [← hc, hsp]
-      simp [expValue, digitsVal_eq]
-    · rename_i _ hc2; exact absurd (hc2 (d :: ds) rfl) (by simp)
+  · rw [List.nil_append]; exact withExp_none neg ids fds ec d ds hd hds
+  · rw [List.singleton_append]; exact withExp_minus neg ids fds ec d ds hd hds
+  · rw [List.singleton_append]; exact withExp_plus neg ids fds ec d ds hd hds
 
 /-- `numVal`'s last step on an exponent part of the grammar, or none. -/
 theorem finish_eq (neg : Bool) (ids fds ex : List Char) (hx : Json.ExpOk ex) :
