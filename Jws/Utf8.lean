@@ -4,7 +4,8 @@
   carries hold their strings as lists of characters, so the token
   code needs both directions between characters and bytes.
 
-  The encoder writes the standard one to four bytes per character.
+  The encoder is meant to write the standard one to four bytes per
+  character; no theorem compares it with RFC 3629.
   The decoder is strict. It turns away stray continuation bytes,
   overlong forms (a character written with more bytes than it
   needs, including any lead byte below C2), lead bytes above F4,

@@ -42,9 +42,9 @@ theorem Spec.printToken_parse (s : List Char) (t : Token)
     header and claims values are what the two kept parts decode
     to through the base64url decoder, the UTF-8 decoder, and the
     JSON parser. So a parser that kept the right parts but made
-    up the values fails this statement. The two decoders are
-    strict: see `Spec.encode_decode` and `Spec.utf8_encode_decode`
-    below. -/
+    up the values fails this statement. Each of the two decoders
+    accepts only its encoder's output: see `Spec.encode_decode`
+    and `Spec.utf8_encode_decode` below. -/
 theorem Spec.parseToken_reads (s : List Char) (t : Token)
     (h : parseToken s = some t) :
     splitSep '.' s = [t.headerSeg, t.payloadSeg, Base64url.encode t.sig] ∧
@@ -88,9 +88,9 @@ theorem Spec.utf8_decode_encode (cs : List Char) :
     Utf8.decode (Utf8.encode cs) = some cs := sorry
 
 /-- Encoding what the UTF-8 decoder returned gives the bytes
-    back: the decoder accepts only the standard encoding (RFC
-    3629) of the text it returns, with each character in its
-    shortest form. -/
+    back: the decoder accepts only what `Utf8.encode` writes for
+    the text it returns. That `Utf8.encode` writes the standard
+    encoding (RFC 3629) is not stated here. -/
 theorem Spec.utf8_encode_decode (bs : List UInt8) (cs : List Char)
     (h : Utf8.decode bs = some cs) :
     Utf8.encode cs = bs := sorry

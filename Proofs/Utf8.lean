@@ -249,8 +249,7 @@ theorem encode_decode_lt : ∀ (n : Nat) (bs : List UInt8), bs.length < n →
             · cases h
 
 /-- Encoding a decoding gives the bytes back: the decoder accepts only
-    byte strings that are the standard encoding of the text it
-    returns, so it is strict. -/
+    byte strings that `encode` writes for the text it returns. -/
 theorem encode_decode (bs : List UInt8) (cs : List Char) (h : decode bs = some cs) :
     encode cs = bs :=
   encode_decode_lt _ bs (Nat.lt_succ_self _) cs h

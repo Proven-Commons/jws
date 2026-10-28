@@ -101,12 +101,12 @@ where they end in `sorry`) and proved in
 | Claim | Theorem |
 |-------|---------|
 | Printing a parsed token gives back the text that was parsed, byte for byte. | `Spec.printToken_parse` |
-| A parsed token holds the first two parts of the text as received, the header and claims values those parts decode to (the base64url decoder, the UTF-8 decoder, then the JSON parser), and signature bytes whose base64url is the third part; the text has exactly those three parts. The two decoders are strict, as the rows below prove. | `Spec.parseToken_reads` |
+| A parsed token holds the first two parts of the text as received, the header and claims values those parts decode to (the base64url decoder, the UTF-8 decoder, then the JSON parser), and signature bytes whose base64url is the third part; the text has exactly those three parts. Each of the two decoders accepts only its encoder's output, as the rows below prove. | `Spec.parseToken_reads` |
 | Parsing the printed form of a token made with `Jws.makeToken` from header and claims values gives that token back, for values that are well formed in the json slice's sense. | `Spec.parseToken_print` |
 | Decoding the base64url encoding of any bytes gives the bytes back. | `Spec.decode_encode` |
 | Encoding what the base64url decoder returned gives the decoded text back: the decoder accepts only the canonical, unpadded encoding of its bytes. | `Spec.encode_decode` |
 | Decoding the UTF-8 encoding of any text gives the text back. | `Spec.utf8_decode_encode` |
-| Encoding what the UTF-8 decoder returned gives the decoded bytes back: the decoder accepts only the standard encoding of its text, each character in its shortest form, so no overlong form, no encoded surrogate, and nothing above U+10FFFF. | `Spec.utf8_encode_decode` |
+| Encoding what the UTF-8 decoder returned, with this repo's encoder `Jws.Utf8.encode`, gives the decoded bytes back: the decoder accepts only that encoder's output for the text it returns. That the encoder writes the standard encoding is not proved (see What is not proved). | `Spec.utf8_encode_decode` |
 | The UTF-8 decoder turns away the overlong forms C0 80, E0 80 80 and F0 80 80 80, the encoded surrogate ED A0 80, F4 90 80 80 (above U+10FFFF), a stray continuation byte 80, the truncated E2 82, and the five byte lead F8. | `Spec.utf8_rejects_ill_formed` |
 | The RFC 7515 A.1 token is accepted when HS256 is allowed and the issuer must be `joe`, with no current time supplied. | `Spec.accepts_rfc_a1` |
 | A hand built token with header `{"alg":"HS256"}`, claims `{"iss":"joe","exp":2000000000}`, and a 32 byte signature is accepted under HS256 allowed, current time 1500000000, and issuer `joe`. | `Spec.accepts_hand_built` |
@@ -197,6 +197,20 @@ on the tool's answer.
   printer writes (`Json.Proofs.parse_print`); its
   rejections rest on the json slice's tests and on the
   malformed JSON cases here.
+- That `Jws.Utf8.encode` writes the standard UTF-8
+  encoding (RFC 3629), each character in its shortest
+  form. `Spec.utf8_encode_decode` says the decoder accepts
+  only this encoder's output, so whether the decoder
+  accepts exactly standard UTF-8 rests on the encoder,
+  and no theorem compares it with RFC 3629.
+  `Spec.utf8_rejects_ill_formed` pins one overlong form of
+  each length, an encoded surrogate, a value above
+  U+10FFFF, a stray continuation byte, a truncated
+  sequence and a five byte lead. The tests send Python's
+  UTF-8 for `é` (a two byte form) in the fixed cases, the
+  seeded corpus and the PyJWT tokens, and an overlong
+  lead (C0 AF) that must be turned away; one, three and
+  four byte forms beyond ASCII are not exercised.
 - That the JSON printer gives back the text it parsed.
   It does not (it writes a canonical form, without the
   whitespace a sender may have used), and the json
@@ -304,21 +318,22 @@ pinned by tests:
 
 ## Re-check it
 
-1. `lake comparator --paranoid`: builds the challenge
+1. `lake build`: the libraries, the proofs, and the tool
+   build clean. This also builds `.lake/build/bin/jws`,
+   which the test harness runs.
+2. `lake comparator --paranoid`: builds the challenge
    file `Spec.lean` and the proofs in a sandbox and
    checks that each theorem named in `comparator.json`
    proves exactly the statement in the challenge file,
    uses no axiom but the three standard ones, and is
    accepted by Lean's kernel and every other kernel
    shipped with Lean.
-2. `python3 tests/run_tests.py`: the fixed RFC cases,
+3. `python3 tests/run_tests.py`: the fixed RFC cases,
    the mutation cases, the malformed request cases, the
    two seeded corpora, and the PyJWT tokens and probe
    verdicts, with counts and any failures written to
    `tests/TEST-RESULTS.md`. The harness reads the PyJWT
    tokens and verdicts from `tests/pyjwt_corpus.json` and
    needs no library beyond Python's own.
-3. `lake build`: the libraries, the proofs, and the tool
-   build clean.
 4. Read `SPEC.md` against RFC 7515 and RFC 7519 and check
    the pinned readings are the ones you want.
