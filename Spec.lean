@@ -41,9 +41,11 @@ theorem Spec.printToken_parse (s : List Char) (t : Token)
     into exactly three parts, the kept header part, the kept
     payload part, and the base64url of the signature bytes; the
     header and claims values are what the two kept parts decode
-    to through strict base64url, strict UTF-8, and the JSON
-    parser. So a parser that kept the right parts but made up the
-    values fails this statement. -/
+    to through the base64url decoder, the UTF-8 decoder, and the
+    JSON parser. So a parser that kept the right parts but made
+    up the values fails this statement. The two decoders are
+    strict: see `Spec.encode_decode` and `Spec.utf8_encode_decode`
+    below. -/
 theorem Spec.parseToken_reads (s : List Char) (t : Token)
     (h : parseToken s = some t) :
     splitSep '.' s = [t.headerSeg, t.payloadSeg, Base64url.encode t.sig] ∧
@@ -65,6 +67,44 @@ theorem Spec.parseToken_print (h c : Json.Json) (sig : List UInt8)
     bytes back. -/
 theorem Spec.decode_encode (bs : List UInt8) :
     Base64url.decode (Base64url.encode bs) = some bs := sorry
+
+/-! ## Strict decoding
+
+Each decoder accepts only an input that is the encoding of what
+it returns. With the round trips, the base64url decoder and the
+UTF-8 decoder are exactly the inverses of their encoders: no
+padding, no nonzero unused bits, no overlong form, no surrogate,
+nothing above U+10FFFF. -/
+
+/-- Encoding what the base64url decoder returned gives the text
+    back: the decoder accepts only the canonical, unpadded
+    encoding of the bytes it returns. -/
+theorem Spec.encode_decode (cs : List Char) (bs : List UInt8)
+    (h : Base64url.decode cs = some bs) :
+    Base64url.encode bs = cs := sorry
+
+/-- Decoding the UTF-8 encoding of any text gives the text
+    back. -/
+theorem Spec.utf8_decode_encode (cs : List Char) :
+    Utf8.decode (Utf8.encode cs) = some cs := sorry
+
+/-- Encoding what the UTF-8 decoder returned gives the bytes
+    back: the decoder accepts only the standard encoding (RFC
+    3629) of the text it returns, with each character in its
+    shortest form. -/
+theorem Spec.utf8_encode_decode (bs : List UInt8) (cs : List Char)
+    (h : Utf8.decode bs = some cs) :
+    Utf8.encode cs = bs := sorry
+
+/-- The UTF-8 decoder turns away, among others: the overlong
+    forms C0 80, E0 80 80 and F0 80 80 80; the encoded surrogate
+    ED A0 80; F4 90 80 80, above U+10FFFF; a stray continuation
+    byte 80; the truncated E2 82; and the five byte lead F8. -/
+theorem Spec.utf8_rejects_ill_formed :
+    ([[0xC0, 0x80], [0xE0, 0x80, 0x80], [0xF0, 0x80, 0x80, 0x80],
+      [0xED, 0xA0, 0x80], [0xF4, 0x90, 0x80, 0x80], [0x80], [0xE2, 0x82],
+      [0xF8, 0x88, 0x80, 0x80, 0x80]] : List (List UInt8)).all
+      (fun bs => (Utf8.decode bs).isNone) = true := sorry
 
 /-! ## Single tokens, accepted and refused
 

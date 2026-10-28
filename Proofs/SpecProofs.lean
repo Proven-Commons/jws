@@ -3,8 +3,8 @@
   names.
 
   The round trips are the theorems proved in
-  `Proofs/Token.lean` and `Proofs/B64.lean`; the number
-  statements are proved in `Proofs/Num.lean`. The single
+  `Proofs/Token.lean`, `Proofs/B64.lean` and `Proofs/Utf8.lean`;
+  the number statements are proved in `Proofs/Num.lean`. The single
   tokens are checked in the kernel with `decide +kernel`: no
   native evaluation, which the bar forbids.
 -/
@@ -13,6 +13,7 @@ import Jws
 import Spec.Defs
 import Proofs.Token
 import Proofs.B64
+import Proofs.Utf8
 import Proofs.Check
 import Proofs.Num
 
@@ -40,6 +41,27 @@ theorem Spec.parseToken_print (h c : Json.Json) (sig : List UInt8)
 theorem Spec.decode_encode (bs : List UInt8) :
     Base64url.decode (Base64url.encode bs) = some bs :=
   Jws.Base64url.Proofs.decode_encode bs
+
+theorem Spec.encode_decode (cs : List Char) (bs : List UInt8)
+    (h : Base64url.decode cs = some bs) :
+    Base64url.encode bs = cs :=
+  Jws.Base64url.Proofs.encode_decode cs bs h
+
+theorem Spec.utf8_decode_encode (cs : List Char) :
+    Utf8.decode (Utf8.encode cs) = some cs :=
+  Jws.Utf8.Proofs.decode_encode cs
+
+theorem Spec.utf8_encode_decode (bs : List UInt8) (cs : List Char)
+    (h : Utf8.decode bs = some cs) :
+    Utf8.encode cs = bs :=
+  Jws.Utf8.Proofs.encode_decode bs cs h
+
+theorem Spec.utf8_rejects_ill_formed :
+    ([[0xC0, 0x80], [0xE0, 0x80, 0x80], [0xF0, 0x80, 0x80, 0x80],
+      [0xED, 0xA0, 0x80], [0xF4, 0x90, 0x80, 0x80], [0x80], [0xE2, 0x82],
+      [0xF8, 0x88, 0x80, 0x80, 0x80]] : List (List UInt8)).all
+      (fun bs => (Utf8.decode bs).isNone) = true := by
+  decide +kernel
 
 
 theorem Spec.accepts_rfc_a1 :

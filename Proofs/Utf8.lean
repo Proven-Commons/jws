@@ -132,4 +132,127 @@ theorem decode_encode : ∀ cs : List Char, decode (encode cs) = some cs := by
     rw [decode_append_char, ih]
     rfl
 
+
+/-- A byte `contVal` reads is a continuation byte with that payload. -/
+theorem contVal_spec {b : UInt8} {v : Nat} (h : contVal b = some v) :
+    b.toNat = 0x80 + v ∧ v < 64 := by
+  unfold contVal at h
+  split at h
+  · rename_i hb; have := Option.some.inj h; omega
+  · cases h
+
+/-- A Unicode scalar value is the code of the character made from it. -/
+theorem toNat_ofNat_valid {n : Nat} (h : n.isValidChar) : (Char.ofNat n).toNat = n := by
+  rw [Char.ofNat, dite_eq_left h]; rfl
+
+/-- A number equal to a byte's value converts to that byte. -/
+theorem u8_eq {k : Nat} {b : UInt8} (h : k = b.toNat) : k.toUInt8 = b := by
+  apply UInt8.toNat_inj.mp
+  rw [toNat_toUInt8 (by have := b.toNat_lt; omega)]
+  exact h
+
+/-- The converse round trip, by strong induction on the byte count:
+    each branch of the decoder that succeeds read the bytes the
+    encoder writes for the character it made. -/
+theorem encode_decode_lt : ∀ (n : Nat) (bs : List UInt8), bs.length < n →
+    ∀ cs, decode bs = some cs → encode cs = bs
+  | 0, _, hl, _, _ => absurd hl (Nat.not_lt_zero _)
+  | _ + 1, [], _, cs, h => by
+    rw [decode.eq_1] at h; cases h; rfl
+  | n + 1, b :: rest, hl, cs, h => by
+    rw [decode.eq_def] at h
+    dsimp only at h
+    split at h
+    · rename_i hb
+      obtain ⟨cs', h1, rfl⟩ := Option.map_eq_some_iff.mp h
+      show encodeChar _ ++ encode cs' = b :: rest
+      rw [encode_decode_lt n rest (by simp at hl; omega) cs' h1]
+      have hv : (Char.ofNat b.toNat).toNat = b.toNat := toNat_ofNat_valid (by left; omega)
+      unfold encodeChar
+      rw [hv, ite_eq_left hb, u8_eq rfl]
+      rfl
+    · split at h
+      · cases h
+      · split at h
+        · split at h
+          · split at h
+            · rename_i h0 h1 h2 _ b1 rest1 _ v1 hv1
+              obtain ⟨cs', h1', rfl⟩ := Option.map_eq_some_iff.mp h
+              obtain ⟨hb1, hv⟩ := contVal_spec hv1
+              show encodeChar _ ++ encode cs' = b :: b1 :: rest1
+              rw [encode_decode_lt n rest1 (by simp at hl; omega) cs' h1']
+              generalize hN : (b.toNat - 192) * 64 + v1 = N
+              have hc : (Char.ofNat N).toNat = N := toNat_ofNat_valid (by left; omega)
+              unfold encodeChar
+              rw [hc, ite_eq_right (by omega), ite_eq_left (by omega),
+                show (0xC0 + N / 64).toUInt8 = b from u8_eq (by omega),
+                show (0x80 + N % 64).toUInt8 = b1 from u8_eq (by omega)]
+              rfl
+            · cases h
+          · cases h
+        · split at h
+          · split at h
+            · split at h
+              · split at h
+                · rename_i h0 h1 h2 h3 _ b1 b2 rest1 _ _ v1 v2 hv1 hv2 hside
+                  obtain ⟨cs', h1', rfl⟩ := Option.map_eq_some_iff.mp h
+                  obtain ⟨hb1, hv1'⟩ := contVal_spec hv1
+                  obtain ⟨hb2, hv2'⟩ := contVal_spec hv2
+                  obtain ⟨hs1, hs2⟩ := hside
+                  show encodeChar _ ++ encode cs' = b :: b1 :: b2 :: rest1
+                  rw [encode_decode_lt n rest1 (by simp at hl; omega) cs' h1']
+                  generalize hN : (b.toNat - 224) * 4096 + v1 * 64 + v2 = N
+                  have hc : (Char.ofNat N).toNat = N := toNat_ofNat_valid (by
+                    by_cases hb : b.toNat ≤ 237
+                    · left; omega
+                    · right; omega)
+                  unfold encodeChar
+                  rw [hc, ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_left (by omega),
+                    show (0xE0 + N / 4096).toUInt8 = b from u8_eq (by omega),
+                    show (0x80 + N / 64 % 64).toUInt8 = b1 from u8_eq (by omega),
+                    show (0x80 + N % 64).toUInt8 = b2 from u8_eq (by omega)]
+                  rfl
+                · cases h
+              · cases h
+            · cases h
+          · split at h
+            · split at h
+              · split at h
+                · split at h
+                  · rename_i h0 h1 h2 h3 h4 _ b1 b2 b3 rest1 _ _ _ v1 v2 v3 hv1 hv2 hv3 hside
+                    obtain ⟨cs', h1', rfl⟩ := Option.map_eq_some_iff.mp h
+                    obtain ⟨hb1, hv1'⟩ := contVal_spec hv1
+                    obtain ⟨hb2, hv2'⟩ := contVal_spec hv2
+                    obtain ⟨hb3, hv3'⟩ := contVal_spec hv3
+                    obtain ⟨hs1, hs2⟩ := hside
+                    show encodeChar _ ++ encode cs' = b :: b1 :: b2 :: b3 :: rest1
+                    rw [encode_decode_lt n rest1 (by simp at hl; omega) cs' h1']
+                    generalize hN : (b.toNat - 240) * 262144 + v1 * 4096 + v2 * 64 + v3 = N
+                    have hc : (Char.ofNat N).toNat = N := toNat_ofNat_valid (by
+                      right
+                      by_cases hb : b.toNat = 240
+                      · omega
+                      · by_cases hb' : b.toNat = 244
+                        · omega
+                        · omega)
+                    unfold encodeChar
+                    rw [hc, ite_eq_right (by omega), ite_eq_right (by omega),
+                      ite_eq_right (by omega),
+                      show (0xF0 + N / 262144).toUInt8 = b from u8_eq (by omega),
+                      show (0x80 + N / 4096 % 64).toUInt8 = b1 from u8_eq (by omega),
+                      show (0x80 + N / 64 % 64).toUInt8 = b2 from u8_eq (by omega),
+                      show (0x80 + N % 64).toUInt8 = b3 from u8_eq (by omega)]
+                    rfl
+                  · cases h
+                · cases h
+              · cases h
+            · cases h
+
+/-- Encoding a decoding gives the bytes back: the decoder accepts only
+    byte strings that are the standard encoding of the text it
+    returns, so it is strict. -/
+theorem encode_decode (bs : List UInt8) (cs : List Char) (h : decode bs = some cs) :
+    encode cs = bs :=
+  encode_decode_lt _ bs (Nat.lt_succ_self _) cs h
+
 end Jws.Utf8.Proofs

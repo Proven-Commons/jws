@@ -98,9 +98,13 @@ where they end in `sorry`) and proved in
 | Claim | Theorem |
 |-------|---------|
 | Printing a parsed token gives back the text that was parsed, byte for byte. The command line tool answers an accepted token with this print, so the answer is the input and its signature still matches its signing input. | `Spec.printToken_parse` |
-| A parsed token holds the first two parts of the text as received, the header and claims values those parts decode to (strict base64url, strict UTF-8, then the JSON parser), and signature bytes whose base64url is the third part; the text has exactly those three parts. | `Spec.parseToken_reads` |
+| A parsed token holds the first two parts of the text as received, the header and claims values those parts decode to (the base64url decoder, the UTF-8 decoder, then the JSON parser), and signature bytes whose base64url is the third part; the text has exactly those three parts. The two decoders are strict, as the rows below prove. | `Spec.parseToken_reads` |
 | Parsing the printed form of a token made with `Jws.makeToken` from header and claims values gives that token back, for values that are well formed in the json slice's sense. | `Spec.parseToken_print` |
 | Decoding the base64url encoding of any bytes gives the bytes back. | `Spec.decode_encode` |
+| Encoding what the base64url decoder returned gives the decoded text back: the decoder accepts only the canonical, unpadded encoding of its bytes. | `Spec.encode_decode` |
+| Decoding the UTF-8 encoding of any text gives the text back. | `Spec.utf8_decode_encode` |
+| Encoding what the UTF-8 decoder returned gives the decoded bytes back: the decoder accepts only the standard encoding of its text, each character in its shortest form, so no overlong form, no encoded surrogate, and nothing above U+10FFFF. | `Spec.utf8_encode_decode` |
+| The UTF-8 decoder turns away the overlong forms C0 80, E0 80 80 and F0 80 80 80, the encoded surrogate ED A0 80, F4 90 80 80 (above U+10FFFF), a stray continuation byte 80, the truncated E2 82, and the five byte lead F8. | `Spec.utf8_rejects_ill_formed` |
 | The RFC 7515 A.1 token is accepted when HS256 is allowed and the issuer must be `joe`, with no current time supplied. | `Spec.accepts_rfc_a1` |
 | A hand built token with header `{"alg":"HS256"}`, claims `{"iss":"joe","exp":2000000000}`, and a 32 byte signature is accepted under HS256 allowed, current time 1500000000, and issuer `joe`. | `Spec.accepts_hand_built` |
 | The RFC 7515 A.5 unsecured token (algorithm `none`, empty signature part) is refused when HS256 is the allowed algorithm. | `Spec.rejects_unsecured_none` |
@@ -135,13 +139,13 @@ its bytes (`Jws.Base64url.Proofs.encode_decode`).
 `Jws.Proofs.parseToken_print` is a chain of the three
 round trips under it, the JSON text round trip
 (`Json.Proofs.parse_print`, carried in with the JSON
-code), the UTF-8 round trip
-(`Jws.Utf8.Proofs.decode_encode`, in `Proofs/Utf8.lean`),
-and the base64url round trip. The base64url layer proves
-both directions: `Spec.decode_encode` above, and the
-reverse, encoding a decoding gives the text back
-(`Jws.Base64url.Proofs.encode_decode`, in
-`Proofs/B64.lean`). The theorems about acceptance are
+code), the UTF-8 round trip (`Spec.utf8_decode_encode`),
+and the base64url round trip (`Spec.decode_encode`). The
+base64url and UTF-8 layers prove both directions, so each
+decoder is exactly the inverse of its encoder; the
+converse directions (`Spec.encode_decode`,
+`Spec.utf8_encode_decode`) are proved in
+`Proofs/B64.lean` and `Proofs/Utf8.lean`. The theorems about acceptance are
 proved in `Proofs/Check.lean`, and the theorems about the
 value of a number in `Proofs/Num.lean`. The single token theorems
 are named fixed cases in the test harness, run through
@@ -177,6 +181,12 @@ directly, the same functions the theorems are about.
   keys, signing inputs, or any algorithm. A caller that
   reads claims from this slice without verifying the
   signature has not checked authenticity.
+- That the JSON parser turns away every text outside the
+  RFC 8259 grammar, and lone surrogate escapes. The json
+  slice proves only that the parser reads back what its
+  printer writes (`Json.Proofs.parse_print`); its
+  rejections rest on the json slice's tests and on the
+  malformed JSON cases here.
 - That the JSON printer gives back the text it parsed.
   It does not (it writes a canonical form, without the
   whitespace a sender may have used), and the json

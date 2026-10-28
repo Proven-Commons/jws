@@ -66,15 +66,23 @@ strict:
 
 Encoding writes no padding and always sets the unused bits to
 zero, so decoding an encoding and encoding a decoding are both
-the identity. Both directions are proved in this repo.
+the identity. Both directions are proved in this repo
+(`Spec.decode_encode`, `Spec.encode_decode`).
 
 The header and payload bytes must then be UTF-8, read strictly:
 overlong forms, encodings of the surrogate values U+D800 to
 U+DFFF, values above U+10FFFF, stray continuation bytes, and
-truncated sequences are all turned away. The texts must then
-parse as JSON under the rules of the json slice carried into
-this repo (RFC 8259 grammar; lone surrogate escapes in strings
-are turned away, as that slice's parser cannot hold them).
+truncated sequences are all turned away. Both directions are
+proved here too: decoding an encoding gives the text back
+(`Spec.utf8_decode_encode`), and the decoder accepts only the
+standard encoding of the text it returns, each character in
+its shortest form (`Spec.utf8_encode_decode`);
+`Spec.utf8_rejects_ill_formed` pins an example of each kind
+turned away. The texts must then parse as JSON under the rules
+of the json slice carried into this repo (RFC 8259 grammar;
+lone surrogate escapes in strings are turned away, as that
+slice's parser cannot hold them). Which texts the JSON parser
+turns away is not proved here; the tests cover it.
 
 ## The check
 
@@ -197,7 +205,8 @@ when it is the canonical encoding of its bytes. What the parser
 reads is stated too (`Spec.parseToken_reads`): the text splits at
 its dots into exactly those three parts, and the header and
 claims values are what the two held parts decode to through
-strict base64url, strict UTF-8, and the JSON parser.
+strict base64url, strict UTF-8 (both proved strict, above), and
+the JSON parser.
 
 A token can also be made from values (`Jws.makeToken`): each JSON
 part is written with the json slice's canonical printer (no
@@ -271,6 +280,10 @@ input theorems and the tests.
 | A parsed token holds the received first two parts, the values they decode to, and the signature bytes whose base64url is the third part | `Spec.parseToken_reads` |
 | Parsing the printed form of a token made from well formed JSON values gives that token back | `Spec.parseToken_print` |
 | Decoding a base64url encoding gives the bytes back | `Spec.decode_encode` |
+| The base64url decoder accepts only the canonical encoding of the bytes it returns | `Spec.encode_decode` |
+| Decoding a UTF-8 encoding gives the text back | `Spec.utf8_decode_encode` |
+| The UTF-8 decoder accepts only the standard encoding of the text it returns, each character in its shortest form | `Spec.utf8_encode_decode` |
+| The UTF-8 decoder turns away overlong forms, an encoded surrogate, a value above U+10FFFF, a stray continuation byte, a truncated sequence, and a five byte lead | `Spec.utf8_rejects_ill_formed` |
 | The RFC 7515 A.1 token is accepted under its allowlist with no time checks and the issuer checked | `Spec.accepts_rfc_a1` |
 | The harness's hand built token is accepted under its base context | `Spec.accepts_hand_built` |
 | The RFC 7515 A.5 unsecured token is refused under an HS256 allowlist | `Spec.rejects_unsecured_none` |
