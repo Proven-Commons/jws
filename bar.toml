@@ -7,7 +7,7 @@ name = "jws"
 status = "in-progress"
 page = "README.md"
 # GitHub handles of everyone who wrote the specification.
-spec_authors = ["abu-aska"]
+spec_authors = ["abu-aska", "zero-aska"]
 # The program people run. A change to it voids the approval.
 entry_points = ["Main.lean"]
 
@@ -15,8 +15,9 @@ entry_points = ["Main.lean"]
 files = ["SPEC.md", "Spec.lean"]
 # The code under proof: the functions the statements are about.
 code = [
-  # The token value.
-  "Jws.Token",
+  # The token value, its constructor and fields.
+  "Jws.Token", "Jws.Token.mk", "Jws.Token.header", "Jws.Token.claims",
+  "Jws.Token.sig",
   # The framing: split and join at the dots, the printer, the parser.
   "Jws.splitSep", "Jws.joinSep", "Jws.printToken", "Jws.parseToken",
   # The exact decimal reading of claim numbers, which the check uses.
@@ -24,7 +25,9 @@ code = [
   "Jws.numVal", "Jws.NumVal.isInt", "Jws.NumVal.ofInt",
   "Jws.numDigits", "Jws.magCmp", "Jws.NumVal.cmp",
   # The check: the context, the claim reading, the accept function.
-  "Jws.Context", "Jws.ClaimDate", "Jws.ClaimDate.absent",
+  "Jws.Context", "Jws.Context.mk", "Jws.Context.allow", "Jws.Context.now",
+  "Jws.Context.required", "Jws.Context.issuer", "Jws.Context.audience",
+  "Jws.ClaimDate", "Jws.ClaimDate.absent",
   "Jws.ClaimDate.bad", "Jws.ClaimDate.ok", "Jws.lookup",
   "Jws.dateClaim", "Jws.issShapeOk", "Jws.audShapeOk", "Jws.audOk",
   "Jws.accept",
@@ -59,4 +62,5 @@ code = [
 [tests]
 results = "tests/TEST-RESULTS.md"
 command = "python3 tests/run_tests.py"
-files = ["tests/run_tests.py"]
+files = ["tests/run_tests.py", "tests/make_pyjwt_corpus.py",
+         "tests/pyjwt_corpus.json", "tests/requirements.txt"]

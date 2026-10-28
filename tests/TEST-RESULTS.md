@@ -1,20 +1,21 @@
 # Test results: JWS compact parser and checker
 
-Run with `python3 tests/run_tests.py`. The record is
-written by the run. Seed 20261026 for the random corpus.
-The run happened on 2026-10-26/27.
+Written by `python3 tests/run_tests.py`, which drives the built tool `.lake/build/bin/jws`. A fresh run gives the same inputs, seed, and verdicts.
+
+- Oracle: the SPEC.md rules reimplemented in tests/run_tests.py (Python 3.13), with tokens and decodes from PyJWT 2.15.1 (cryptography 46.0.3)
+- Seed: 20261026
+- Inputs: 426
+- Failures: 0
 
 ## The oracle and PyJWT
 
-PyJWT 2.15.1 was present (a venv inside the work directory, with cryptography). It built 20 tokens (HS256, RS256, ES256, and none algorithms).
-Its unverified decode was compared with the oracle's parse on 20 tokens: 20 agreements, 0 differences.
-Verdicts are always the oracle's (SPEC.md rules reimplemented in the harness). PyJWT built well formed tokens and cross checked decoding only.
+Verdicts come from the oracle, which reimplements the SPEC.md rules in Python. PyJWT 2.15.1 built 20 tokens (HS256, RS256, ES256, and none algorithms), kept in tests/pyjwt_corpus.json with PyJWT's own unverified decode of each. The harness reads that file, so it needs no PyJWT to run; to rebuild the corpus, make a virtual environment from tests/requirements.txt and run tests/make_pyjwt_corpus.py (README, How to run it).
+PyJWT's decode was compared with the oracle's parse on 20 tokens: 20 agreements, 0 differences.
 
 ## Counts
 
 - Total check and request inputs: 426
 - Agreements with the oracle: 426
-- Failures: 0
 - Of the verdict cases: 53 accepted, 363 rejected, 10 malformed requests answered error
 
 ## RFC 7515 fixed cases

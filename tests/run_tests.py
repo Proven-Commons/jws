@@ -11,13 +11,15 @@ Three parts, matching the slice plan:
    signature part emptied, under an otherwise passing context,
    is a fixed reject case.
 
-2. Differential: tokens built with PyJWT (in the work dir venv)
-   when it is present, plus hand built tokens, each run under
-   several check contexts. Every verdict (and, on acceptance,
-   the canonical reprinted token) is compared against an oracle
-   that reimplements SPEC.md in Python. PyJWT also cross checks
-   the parsing: its own unverified decode of each well formed
-   token is compared with the oracle's parse.
+2. Differential: tokens built with PyJWT (read from the committed
+   corpus tests/pyjwt_corpus.json, which tests/make_pyjwt_corpus.py
+   builds from the pinned tests/requirements.txt), plus hand built
+   tokens and a seeded random corpus, each run under several check
+   contexts. Every verdict (and, on acceptance, the token text the
+   tool answers with) is compared against an oracle that
+   reimplements SPEC.md in Python. PyJWT also cross checks the
+   parsing: its own unverified decode of each token it built, kept
+   in the corpus, is compared with the oracle's parse.
 
 3. Mutations and malformed requests: padding added, characters
    outside the alphabet, two or four parts, a header that is not
@@ -32,9 +34,9 @@ decoding, because its own checks differ from this slice's rules
 (it verifies signatures and registered claims its own way when
 asked, and accepts some framings this slice turns away).
 
-Run: python3 tests/run_tests.py (uses .lake/build/bin/jws and
-the venv's python when present for the PyJWT corpus).
-Writes tests/TEST-RESULTS.md with real counts.
+Run: python3 tests/run_tests.py (uses .lake/build/bin/jws; needs
+only the Python standard library). Writes tests/TEST-RESULTS.md
+with real counts.
 """
 
 import base64
@@ -636,65 +638,28 @@ add_check("now field with a minus sign and digits (read as negative)",
           -5, ["HS256"], [], None, None)
 
 # ---------------------------------------------------------------
-# PyJWT corpus: tokens built by PyJWT when present, contexts
-# varied. Verdicts still come from the oracle. PyJWT decode
-# (signature check off) cross checks the oracle's parse.
+# PyJWT corpus: tokens PyJWT built, read from the committed
+# corpus, contexts varied. Verdicts still come from the oracle.
+# PyJWT's decode (signature check off), kept in the corpus, cross
+# checks the oracle's parse.
 # ---------------------------------------------------------------
 
-PYJWT_INFO = {"present": False, "version": None, "tokens": 0,
-              "decode_comparisons": 0, "decode_agreements": 0,
-              "decode_differences": []}
+PYJWT_INFO = {"present": False, "version": None, "cryptography": None,
+              "tokens": 0, "decode_comparisons": 0,
+              "decode_agreements": 0, "decode_differences": []}
+
+CORPUS = ROOT / "tests" / "pyjwt_corpus.json"
 
 
 def build_pyjwt_cases():
-    venv_python = ROOT / "venv" / "bin" / "python"
-    if not venv_python.exists():
-        return
-    script = r'''
-import json, sys
-import jwt
-from jwt import __version__ as v
-from cryptography.hazmat.primitives.asymmetric import rsa, ec
-
-out = {"version": v, "tokens": []}
-rsa_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-ec_key = ec.generate_private_key(ec.SECP256R1())
-
-payloads = [
-    {"iss": "joe", "exp": 2000000000, "nbf": 1400000000, "iat": 1400000000,
-     "aud": "api", "sub": "user-1"},
-    {"iss": "issuer.example", "exp": 2000000000, "aud": ["api", "web"]},
-    {"exp": 2000000000},
-    {"iss": "joe", "exp": 1200000000, "aud": "api"},
-    {"iss": "jé", "exp": 2000000000, "name": "José"},
-    {"iss": "joe", "exp": 2000000000, "nbf": 1600000000},
-    {"iss": "joe", "exp": 9999999999, "aud": ["a", "b", "c"], "admin": True},
-    {"iss": "joe", "exp": 2000000000, "scope": ["read", "write"], "n": 42},
-]
-builders = []
-for p in payloads:
-    builders.append(("HS256", jwt.encode(p, "secret", algorithm="HS256")))
-    builders.append(("none", jwt.encode(p, "", algorithm="none")))
-builders.append(("RS256", jwt.encode(payloads[0], rsa_key, algorithm="RS256")))
-builders.append(("RS256", jwt.encode(payloads[1], rsa_key, algorithm="RS256")))
-builders.append(("ES256", jwt.encode(payloads[0], ec_key, algorithm="ES256")))
-builders.append(("ES256", jwt.encode(payloads[6], ec_key, algorithm="ES256")))
-for alg, tok in builders:
-    decoded = jwt.decode(tok, options={"verify_signature": False})
-    header = jwt.get_unverified_header(tok)
-    out["tokens"].append({"alg": alg, "token": tok,
-                          "header": header, "claims": decoded})
-print(json.dumps(out))
-'''
-    proc = subprocess.run([str(venv_python), "-c", script],
-                          capture_output=True, text=True, timeout=300)
-    if proc.returncode != 0:
-        PYJWT_INFO["error"] = proc.stderr[-500:]
-        return
-    data = json.loads(proc.stdout)
+    """Read the tokens PyJWT built (tests/pyjwt_corpus.json, made by
+    tests/make_pyjwt_corpus.py from tests/requirements.txt). The
+    corpus is committed, so every run makes the same inputs whether
+    or not PyJWT is installed where the harness runs."""
+    data = json.loads(CORPUS.read_text(encoding="utf-8"))
     PYJWT_INFO["present"] = True
-    PYJWT_INFO["version"] = data["version"]
-    random.seed(SEED)
+    PYJWT_INFO["version"] = data["pyjwt"]
+    PYJWT_INFO["cryptography"] = data["cryptography"]
     contexts = [
         ("right alg, inside validity", lambda alg: (1500000000, [alg], [],
                                                      None, None)),
@@ -836,41 +801,42 @@ def main():
     lines_out = []
     lines_out.append("# Test results: JWS compact parser and checker")
     lines_out.append("")
-    lines_out.append("Run with `python3 tests/run_tests.py`. The record is")
-    lines_out.append("written by the run. Seed %d for the random corpus."
-                     % SEED)
-    lines_out.append("The run happened on 2026-10-26/27.")
+    lines_out.append("Written by `python3 tests/run_tests.py`, which drives"
+                     " the built tool `.lake/build/bin/jws`. A fresh run"
+                     " gives the same inputs, seed, and verdicts.")
+    lines_out.append("")
+    lines_out.append("- Oracle: the SPEC.md rules reimplemented in"
+                     " tests/run_tests.py (Python %d.%d), with tokens"
+                     " and decodes from PyJWT %s (cryptography %s)"
+                     % (sys.version_info[0], sys.version_info[1],
+                        PYJWT_INFO["version"], PYJWT_INFO["cryptography"]))
+    lines_out.append("- Seed: %d" % SEED)
+    lines_out.append("- Inputs: %d" % len(CASES))
+    lines_out.append("- Failures: %d" % len(failures))
     lines_out.append("")
     lines_out.append("## The oracle and PyJWT")
     lines_out.append("")
-    if PYJWT_INFO["present"]:
-        lines_out.append("PyJWT %s was present (a venv inside the work"
-                         " directory, with cryptography). It built %d tokens"
-                         " (HS256, RS256, ES256, and none algorithms)."
-                         % (PYJWT_INFO["version"], PYJWT_INFO["tokens"]))
-        lines_out.append("Its unverified decode was compared with the oracle's"
-                         " parse on %d tokens: %d agreements, %d differences."
-                         % (PYJWT_INFO["decode_comparisons"],
-                            PYJWT_INFO["decode_agreements"],
-                            len(PYJWT_INFO["decode_differences"])))
-    elif "error" in PYJWT_INFO:
-        lines_out.append("PyJWT was attempted in the work directory venv but"
-                         " the builder failed; the oracle built and settled"
-                         " every corpus token. Error: "
-                         + PYJWT_INFO["error"].replace("\n", " "))
-    else:
-        lines_out.append("PyJWT was not present. The oracle built and"
-                         " settled every corpus token.")
-    lines_out.append("Verdicts are always the oracle's (SPEC.md rules"
-                     " reimplemented in the harness). PyJWT built well"
-                     " formed tokens and cross checked decoding only.")
+    lines_out.append("Verdicts come from the oracle, which reimplements"
+                     " the SPEC.md rules in Python. PyJWT %s built %d"
+                     " tokens (HS256, RS256, ES256, and none algorithms),"
+                     " kept in tests/pyjwt_corpus.json with PyJWT's own"
+                     " unverified decode of each. The harness reads that"
+                     " file, so it needs no PyJWT to run; to rebuild the"
+                     " corpus, make a virtual environment from"
+                     " tests/requirements.txt and run"
+                     " tests/make_pyjwt_corpus.py (README, How to run"
+                     " it)." % (PYJWT_INFO["version"], PYJWT_INFO["tokens"]))
+    lines_out.append("PyJWT's decode was compared with the oracle's"
+                     " parse on %d tokens: %d agreements, %d differences."
+                     % (PYJWT_INFO["decode_comparisons"],
+                        PYJWT_INFO["decode_agreements"],
+                        len(PYJWT_INFO["decode_differences"])))
     lines_out.append("")
     lines_out.append("## Counts")
     lines_out.append("")
     lines_out.append("- Total check and request inputs: %d" % len(CASES))
     lines_out.append("- Agreements with the oracle: %d"
                      % (len(CASES) - len(failures)))
-    lines_out.append("- Failures: %d" % len(failures))
     lines_out.append("- Of the verdict cases: %d accepted, %d rejected,"
                      " %d malformed requests answered error"
                      % (accepted, rejected, errors))

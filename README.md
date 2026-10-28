@@ -1,6 +1,6 @@
 # jws: a JWS compact parser and checker, with a proved round trip
 
-Status: in-progress
+Status: in progress
 
 A parser and checker for the JWS compact form (RFC 7515)
 in Lean. The parser reads the three base64url parts,
@@ -52,9 +52,18 @@ python3 tests/run_tests.py
 `python3 tests/run_tests.py` runs the fixed RFC 7515
 Appendix A cases, the mutation cases, the malformed
 request cases, and the differential corpus against an
-oracle implementing the same rules (with tokens built by
-PyJWT when the work directory venv is present), and
-writes the counts to `tests/TEST-RESULTS.md`.
+oracle implementing the same rules, and writes the
+counts to `tests/TEST-RESULTS.md`. It needs only the
+Python standard library. The tokens PyJWT built for the
+corpus are committed in `tests/pyjwt_corpus.json`, so
+every run reads the same inputs. To rebuild that file
+with the pinned PyJWT and cryptography:
+
+```
+python3 -m venv venv
+venv/bin/pip install -r tests/requirements.txt
+venv/bin/python tests/make_pyjwt_corpus.py
+```
 
 ## What is proved
 
@@ -169,11 +178,12 @@ pinned by tests:
   fidelity of the spec to the RFC is a reading, pinned
   in `SPEC.md` where the RFC leaves a choice open.
 - The oracle in `tests/run_tests.py`, written from
-  `SPEC.md`, and PyJWT and cryptography in the test venv
-  when present. Both are evidence, not proof: PyJWT
-  builds well formed tokens and cross checks decoding
-  only, and verdicts never come from PyJWT. The results
-  file names the versions used.
+  `SPEC.md`, and PyJWT and cryptography (pinned in
+  `tests/requirements.txt`), which built the tokens in
+  `tests/pyjwt_corpus.json`. Both are evidence, not proof:
+  PyJWT builds well formed tokens and cross checks
+  decoding only, and verdicts never come from PyJWT. The
+  results file names the versions used.
 - The line handling in `Main.lean` (splitting a request
   line, reading the six fields and their decimal codes,
   and the partial IO loop that reads lines until the
@@ -194,10 +204,9 @@ pinned by tests:
 2. `python3 tests/run_tests.py`: the fixed RFC cases,
    the mutation cases, the malformed request cases, and
    the differential corpus, with counts and any failures
-   written to `tests/TEST-RESULTS.md`. The harness uses
-   the PyJWT library from the virtual environment in the
-   work directory (`venv`) when it is there, and says so
-   in the results file when it is not.
+   written to `tests/TEST-RESULTS.md`. The harness reads
+   the PyJWT tokens from `tests/pyjwt_corpus.json` and
+   needs no library beyond Python's own.
 3. `lake build`: the libraries, the proofs, and the tool
    build clean.
 4. Read `SPEC.md` against RFC 7515 and check the pinned

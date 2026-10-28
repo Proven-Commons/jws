@@ -1,0 +1,306 @@
+{
+ "pyjwt": "2.15.1",
+ "cryptography": "46.0.3",
+ "tokens": [
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTQwMDAwMDAwMCwiaWF0IjoxNDAwMDAwMDAwLCJhdWQiOiJhcGkiLCJzdWIiOiJ1c2VyLTEifQ.RHVDPsvhh-43fZEoTqsMBUmtBbmJPG2lrvGkDWLVgNY",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "nbf": 1400000000,
+    "iat": 1400000000,
+    "aud": "api",
+    "sub": "user-1"
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTQwMDAwMDAwMCwiaWF0IjoxNDAwMDAwMDAwLCJhdWQiOiJhcGkiLCJzdWIiOiJ1c2VyLTEifQ.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "nbf": 1400000000,
+    "iat": 1400000000,
+    "aud": "api",
+    "sub": "user-1"
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpc3N1ZXIuZXhhbXBsZSIsImV4cCI6MjAwMDAwMDAwMCwiYXVkIjpbImFwaSIsIndlYiJdfQ.j4GuctX7tsRjT0S7LvligMPqOoUhRRnNrSPzew-uTEg",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "issuer.example",
+    "exp": 2000000000,
+    "aud": [
+     "api",
+     "web"
+    ]
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJpc3N1ZXIuZXhhbXBsZSIsImV4cCI6MjAwMDAwMDAwMCwiYXVkIjpbImFwaSIsIndlYiJdfQ.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "issuer.example",
+    "exp": 2000000000,
+    "aud": [
+     "api",
+     "web"
+    ]
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjIwMDAwMDAwMDB9.JgCO_GqUQnbS0z2hCxJLE9Tpt5SMoZObHBxzGBWuTYQ",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "exp": 2000000000
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJleHAiOjIwMDAwMDAwMDB9.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "exp": 2000000000
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjEyMDAwMDAwMDAsImF1ZCI6ImFwaSJ9.-6hL8p0XV2WK0O8DlGTYm87p7uImaqxSagUS0ECeoR0",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 1200000000,
+    "aud": "api"
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJqb2UiLCJleHAiOjEyMDAwMDAwMDAsImF1ZCI6ImFwaSJ9.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 1200000000,
+    "aud": "api"
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqXHUwMGU5IiwiZXhwIjoyMDAwMDAwMDAwLCJuYW1lIjoiSm9zXHUwMGU5In0.mlBfn_M6Q_3MnK3Dk10TAfUY-xBTB3btAp6tabla1g0",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "jé",
+    "exp": 2000000000,
+    "name": "José"
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJqXHUwMGU5IiwiZXhwIjoyMDAwMDAwMDAwLCJuYW1lIjoiSm9zXHUwMGU5In0.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "jé",
+    "exp": 2000000000,
+    "name": "José"
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTYwMDAwMDAwMH0.Z1prpwAa6ZpIA6bhQP0qrZMcpuOdLElJsLx3X3BL1CE",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "nbf": 1600000000
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTYwMDAwMDAwMH0.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "nbf": 1600000000
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjk5OTk5OTk5OTksImF1ZCI6WyJhIiwiYiIsImMiXSwiYWRtaW4iOnRydWV9.hsTNf8ktrgZf7Pm8wmQIBueRezV4NLvjd1ytemZ857M",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 9999999999,
+    "aud": [
+     "a",
+     "b",
+     "c"
+    ],
+    "admin": true
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJqb2UiLCJleHAiOjk5OTk5OTk5OTksImF1ZCI6WyJhIiwiYiIsImMiXSwiYWRtaW4iOnRydWV9.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 9999999999,
+    "aud": [
+     "a",
+     "b",
+     "c"
+    ],
+    "admin": true
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsInNjb3BlIjpbInJlYWQiLCJ3cml0ZSJdLCJuIjo0Mn0.ZHgmq-435Zb2TfD_XlfXJvPw5KqE2PehlbkvgZjNfts",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "scope": [
+     "read",
+     "write"
+    ],
+    "n": 42
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsInNjb3BlIjpbInJlYWQiLCJ3cml0ZSJdLCJuIjo0Mn0.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "scope": [
+     "read",
+     "write"
+    ],
+    "n": 42
+   }
+  },
+  {
+   "alg": "RS256",
+   "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTQwMDAwMDAwMCwiaWF0IjoxNDAwMDAwMDAwLCJhdWQiOiJhcGkiLCJzdWIiOiJ1c2VyLTEifQ.Py8YuPr5CNw74vDDCP5SwvIsQvGC8Kg5rO59w-epWLvta8eZ0-1ChzAiNqqueKgrbmCy315uABwICz0RAvU-5aIXcSSmls5p4TA8r3j_jMuD0RlgGmcP5KWyYdgDl_iacctTKNjKYSuBALkMghcDhRugTRr2W19uvVJ5nMOMzxkAo-vmesz27gho8Xz1mXmpwCAwDGJjA3M7nNUzdOCuxt0YSA-dTrnXyTe7QtQ8_y3tmOEKperpUsc787zhymxqHsol-rM2WqbZ5CCwf0n_KRXQ3xzi0ZaUlLY-_0yNqMtTY8fFK884QFj5lkJ8iKfxMEbhGPSNmHCKKZHgxIq7qQ",
+   "header": {
+    "alg": "RS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "nbf": 1400000000,
+    "iat": 1400000000,
+    "aud": "api",
+    "sub": "user-1"
+   }
+  },
+  {
+   "alg": "RS256",
+   "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpc3N1ZXIuZXhhbXBsZSIsImV4cCI6MjAwMDAwMDAwMCwiYXVkIjpbImFwaSIsIndlYiJdfQ.O2TviK2bH-Wy4AyBZFPAMcfXlSm3leI3eV6XAytjpF9P8b6xEBCWmV4HYB7SSehg17yR2RCvJvPLgviHjL0WOPpCIOtnoDud8PYmPiHdzzO3EUJDG1jvfFnxDfQTQkmxFEjkfba5McLlFrVW9UVKc3wEw31UCkaRHveI6xkKUJJ0l7kOZaeo_ftSCGpWJZTiZL6Y5WRDaqWovMM44n0cHgB6NxnkDVM34k5qRL1VTG4hwphqVCppZcDEOS6qIB2_DSXbR1CCtmMfCTHaNSPIqZMqpFWCQyD9L-7lPNTc6uXeAgWnouWWrjsUsHvNjIUB8bJlXAy7LzXE1EORvQimqQ",
+   "header": {
+    "alg": "RS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "issuer.example",
+    "exp": 2000000000,
+    "aud": [
+     "api",
+     "web"
+    ]
+   }
+  },
+  {
+   "alg": "ES256",
+   "token": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTQwMDAwMDAwMCwiaWF0IjoxNDAwMDAwMDAwLCJhdWQiOiJhcGkiLCJzdWIiOiJ1c2VyLTEifQ.CLtfjBvU_DGQgEGJzFOWFki-Cg3FTaNNO6vEg79mH0XoiUFwX1XpKqrfghVc6iGHTpqmXosiqtIGQI2aGdD3qw",
+   "header": {
+    "alg": "ES256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "nbf": 1400000000,
+    "iat": 1400000000,
+    "aud": "api",
+    "sub": "user-1"
+   }
+  },
+  {
+   "alg": "ES256",
+   "token": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjk5OTk5OTk5OTksImF1ZCI6WyJhIiwiYiIsImMiXSwiYWRtaW4iOnRydWV9.idtR-M4ID4n_AwjQqUleLw4NGXHxewPmnsfDVG82qJMvhPZGhG2jxrdgiRWOWZ3T9LMkiM8c5Cpf66Qb2TdAvw",
+   "header": {
+    "alg": "ES256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 9999999999,
+    "aud": [
+     "a",
+     "b",
+     "c"
+    ],
+    "admin": true
+   }
+  }
+ ]
+}

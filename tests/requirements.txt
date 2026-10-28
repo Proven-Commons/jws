@@ -1,0 +1,5 @@
+# The versions that built tests/pyjwt_corpus.json. Needed only to
+# rebuild that corpus (tests/make_pyjwt_corpus.py); the harness
+# itself uses the Python standard library alone.
+PyJWT==2.15.1
+cryptography==46.0.3
