@@ -256,7 +256,11 @@ def audOk (claims : Json) (a : List Char) : Bool :=
 /-- Run the checks. Every rule must hold; SPEC.md states them one
     by one. This checks the token's shape and claims only. It
     does not verify the signature, and a true answer here is not
-    a verified token. -/
+    a verified token.
+
+    The header may not carry `crit` at all: this slice understands
+    no extension, and RFC 7515 section 4.1.11 makes a token invalid
+    when its `crit` names one the reader does not understand. -/
 def accept (t : Token) (ctx : Context) : Bool :=
   if ctx.allow.contains "none".toList then false
   else
@@ -264,6 +268,7 @@ def accept (t : Token) (ctx : Context) : Bool :=
     | .obj hkvs, .obj ckvs =>
       namesUnique (hkvs.map Prod.fst) &&
       namesUnique (ckvs.map Prod.fst) &&
+      !(hkvs.map Prod.fst).contains "crit".toList &&
       match lookup "alg".toList t.header with
       | some (.str alg) =>
         alg != "none".toList &&

@@ -125,10 +125,21 @@ theorem Spec.rejects_duplicate_alg (ctx : Context) :
     ∃ t, parseToken
       "eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID".toList
         = some t ∧ accept t ctx = false :=
-  Jws.Proofs.refused_of_names _ ctx (by decide +kernel)
+  Jws.Proofs.refused_of_shape _ ctx (by decide +kernel)
 
 theorem Spec.rejects_duplicate_iss (ctx : Context) :
     ∃ t, parseToken
       "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImlzcyI6ImV2aWwifQ.AQID".toList
         = some t ∧ accept t ctx = false :=
-  Jws.Proofs.refused_of_names _ ctx (by decide +kernel)
+  Jws.Proofs.refused_of_shape _ ctx (by decide +kernel)
+
+theorem Spec.accept_no_crit (t : Token) (ctx : Context)
+    (h : accept t ctx = true) :
+    ∃ hkvs, t.header = .obj hkvs ∧ "crit".toList ∉ hkvs.map Prod.fst :=
+  Jws.Proofs.accept_no_crit t ctx h
+
+theorem Spec.rejects_crit_b64 (ctx : Context) :
+    ∃ t, parseToken
+      "eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID".toList
+        = some t ∧ accept t ctx = false :=
+  Jws.Proofs.refused_of_shape _ ctx (by decide +kernel)

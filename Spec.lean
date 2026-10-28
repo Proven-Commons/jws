@@ -192,3 +192,27 @@ theorem Spec.rejects_duplicate_iss (ctx : Context) :
     ∃ t, parseToken
       "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImlzcyI6ImV2aWwifQ.AQID".toList
         = some t ∧ accept t ctx = false := sorry
+
+/-! ## The `crit` header parameter
+
+RFC 7515 section 4.1.11: when `crit` lists an extension the
+reader does not understand, the JWS is invalid. This slice
+understands no extension, so it turns away every header that has
+a `crit` member, whatever its value. -/
+
+/-- An accepted token's header is an object with no `crit`
+    member. -/
+theorem Spec.accept_no_crit (t : Token) (ctx : Context)
+    (h : accept t ctx = true) :
+    ∃ hkvs, t.header = .obj hkvs ∧ "crit".toList ∉ hkvs.map Prod.fst := sorry
+
+/-- The token whose header is
+    `{"alg":"HS256","b64":false,"crit":["b64"]}` (RFC 7797's
+    unencoded payload option, which changes what the signature
+    covers), with claims `{"exp":2000000000}` and signature bytes
+    01 02 03, parses and is refused under every context. The
+    harness case is "crit naming b64: refused". -/
+theorem Spec.rejects_crit_b64 (ctx : Context) :
+    ∃ t, parseToken
+      "eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID".toList
+        = some t ∧ accept t ctx = false := sorry

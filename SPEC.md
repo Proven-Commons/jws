@@ -133,6 +133,16 @@ The token is accepted only when every rule holds:
     value of a private claim that is itself an object) are not
     checked for repeats: no rule reads a member of a nested
     object.
+18. The header has no `crit` member, whatever its value (a list
+    of names, an empty list, or anything else). `crit` lists the
+    extensions a reader must understand, and RFC 7515 section
+    4.1.11 makes the JWS invalid when it names one the reader
+    does not. This slice understands no extension, so every
+    `crit` header is turned away. That includes RFC 7797's
+    `"b64":false`, which changes what the signature covers.
+    Other header parameters besides `alg` (`typ`, `kid`, `b64`
+    without `crit`, and any other) are not read, as RFC 7515
+    section 4 asks for parameters a reader does not understand.
 
 When no current time is supplied, rules 10 and 11 are skipped;
 every other rule, including the type rule 9, still applies.
@@ -222,3 +232,5 @@ and `Jws.accept` the command line tool calls; the tests in
 | An accepted token's header and claims are objects that repeat no member name (rules 3, 4, 17) | `Spec.accept_names_unique` |
 | The token with header `{"alg":"HS256","alg":"none"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_alg` |
 | The token with claims `{"iss":"joe","exp":2000000000,"iss":"evil"}` parses and is refused under every context (rule 17) | `Spec.rejects_duplicate_iss` |
+| An accepted token's header has no `crit` member (rule 18) | `Spec.accept_no_crit` |
+| The token with header `{"alg":"HS256","b64":false,"crit":["b64"]}` parses and is refused under every context (rule 18) | `Spec.rejects_crit_b64` |

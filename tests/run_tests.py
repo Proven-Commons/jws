@@ -272,6 +272,11 @@ def oracle_check(token_text, now, allow, required, issuer, audience):
         # A repeated member name in either object turns the token
         # away (SPEC rule 17; RFC 7515 section 4, RFC 7519 section 4).
         return None
+    if any(k == "crit" for (k, _) in header[1]):
+        # The slice understands no extension, so a crit member of
+        # any value turns the token away (SPEC rule 18; RFC 7515
+        # section 4.1.11).
+        return None
     alg = lookup("alg", header)
     if alg is None or alg[0] != "str":
         return None
@@ -642,6 +647,46 @@ add_check("duplicate name nobody reads (foo): refused",
 add_check("repeated name inside a nested object, not read: accepted",
           claims_token(b'{"exp":2000000000,"ctx":{"a":1,"a":2}}'),
           NOW, ["HS256"], [], None, None)
+
+# The crit header parameter: any crit member is refused, since the
+# slice understands no extension (SPEC rule 18). Review 1 item 2.
+add_check("crit naming b64: refused",
+          "eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19."
+          "eyJleHAiOjIwMDAwMDAwMDB9.AQID",
+          NOW, ["HS256"], [], None, None)
+add_check("crit naming b64, longer signature: refused",
+          hand_token(b'{"alg":"HS256","b64":false,"crit":["b64"]}',
+                     GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("crit naming an unknown extension: refused",
+          hand_token(b'{"alg":"HS256","crit":["x-unknown"],"x-unknown":1}',
+                     GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("crit naming a URI extension (RFC 7515 E shape): refused",
+          hand_token(b'{"alg":"HS256","crit":["http://example.invalid/'
+                     b'UNDEFINED"],"http://example.invalid/UNDEFINED":true}',
+                     GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("crit as an empty list: refused",
+          hand_token(b'{"alg":"HS256","crit":[]}', GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("crit not a list: refused",
+          hand_token(b'{"alg":"HS256","crit":"exp"}', GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("crit null: refused",
+          hand_token(b'{"alg":"HS256","crit":null}', GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("crit spelled with an escape: refused",
+          hand_token(b'{"alg":"HS256","\\u0063rit":["b64"],"b64":false}',
+                     GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
+add_check("crit as a claim name, not a header name: accepted",
+          claims_token(b'{"crit":["b64"],"exp":2000000000}'),
+          NOW, ["HS256"], [], None, None)
+add_check("b64 false without crit (not understood, not critical):"
+          " accepted",
+          hand_token(b'{"alg":"HS256","b64":false}', GOOD_P, SIG),
+          NOW, ["HS256"], [], None, None)
 add_check("payload whitespace and key order kept in the reprint",
           claims_token(b'{ "exp" : 2000000000 , "iss" : "joe" }'),
           NOW, ["HS256"], [], "joe", None)
@@ -935,6 +980,15 @@ def main():
                      " escape. Names inside nested objects are not"
                      " checked, since the slice reads no member of a"
                      " nested object; a fixed case pins that.")
+    lines_out.append("- Named change from review 1 item 2: a header with"
+                     " a `crit` member, of any value, is turned away"
+                     " (SPEC rule 18). The slice understands no"
+                     " extension, and RFC 7515 section 4.1.11 makes a"
+                     " token invalid when `crit` names one the reader"
+                     " does not understand. Fixed cases cover b64, an"
+                     " unknown name, a URI name, an empty list, a"
+                     " string, null, and an escaped spelling; `crit` as"
+                     " a claim name is not a header member and passes.")
     lines_out.append("- The none rule is the exact name `none`. An alg of"
                      " `None` is a different name and can be allowed.")
     lines_out.append("- Date claims are judged by value, not by spelling:"

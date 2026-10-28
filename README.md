@@ -89,6 +89,8 @@ where they end in `sorry`) and proved in
 | When the check accepts a token, under any context, its header and its claims are JSON objects and neither repeats a member name. | `Spec.accept_names_unique` |
 | The token `eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","alg":"none"}`, parses and is refused under every context. | `Spec.rejects_duplicate_alg` |
 | The token whose claims are `{"iss":"joe","exp":2000000000,"iss":"evil"}` (header `{"alg":"HS256"}`, signature bytes 01 02 03) parses and is refused under every context. | `Spec.rejects_duplicate_iss` |
+| When the check accepts a token, under any context, its header is a JSON object with no `crit` member. | `Spec.accept_no_crit` |
+| The token `eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","b64":false,"crit":["b64"]}`, parses and is refused under every context. | `Spec.rejects_crit_b64` |
 
 The token round trip rests on the proofs in
 `Proofs/Token.lean`, where it is
@@ -148,7 +150,7 @@ directly, the same functions the theorems are about.
 - Speed. The code works on lists, which suits proofs,
   not large tokens.
 
-Two readings worth naming, both stated in `SPEC.md` and
+Three readings worth naming, all stated in `SPEC.md` and
 pinned by tests:
 
 - An empty signature part is well formed base64url, but
@@ -167,6 +169,12 @@ pinned by tests:
   accepted token. Objects nested inside the header or the
   claims are not checked for repeated names, because no
   rule reads a member of a nested object.
+- A header with a `crit` member is turned away whatever
+  `crit` holds (`SPEC.md` rule 18): this slice
+  understands no extension, and RFC 7515 section 4.1.11
+  makes a token invalid when `crit` names one the reader
+  does not understand. `Spec.accept_no_crit` proves it
+  for every accepted token.
 
 ## What you must trust
 
