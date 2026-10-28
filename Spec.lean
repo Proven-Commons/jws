@@ -31,8 +31,7 @@ of the proved theorem of the same shape in `Proofs`. -/
     for byte. The two first parts are kept as received, so the
     JWS Signing Input a verifier needs is never rebuilt from the
     JSON values; the signature part is the base64url of the
-    signature bytes. The command line tool answers an accepted
-    token with this print. -/
+    signature bytes. -/
 theorem Spec.printToken_parse (s : List Char) (t : Token)
     (h : parseToken s = some t) :
     printToken t = s := sorry

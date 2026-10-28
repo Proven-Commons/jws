@@ -97,7 +97,7 @@ where they end in `sorry`) and proved in
 
 | Claim | Theorem |
 |-------|---------|
-| Printing a parsed token gives back the text that was parsed, byte for byte. The command line tool answers an accepted token with this print, so the answer is the input and its signature still matches its signing input. | `Spec.printToken_parse` |
+| Printing a parsed token gives back the text that was parsed, byte for byte. | `Spec.printToken_parse` |
 | A parsed token holds the first two parts of the text as received, the header and claims values those parts decode to (the base64url decoder, the UTF-8 decoder, then the JSON parser), and signature bytes whose base64url is the third part; the text has exactly those three parts. The two decoders are strict, as the rows below prove. | `Spec.parseToken_reads` |
 | Parsing the printed form of a token made with `Jws.makeToken` from header and claims values gives that token back, for values that are well formed in the json slice's sense. | `Spec.parseToken_print` |
 | Decoding the base64url encoding of any bytes gives the bytes back. | `Spec.decode_encode` |
@@ -163,7 +163,14 @@ axioms only (`propext`, `Classical.choice`, `Quot.sound`):
 
 The command line tool in `Main.lean` calls
 `Jws.parseToken`, `Jws.accept`, and `Jws.printToken`
-directly, the same functions the theorems are about.
+directly, the same functions the theorems are about. It
+answers an accepted token with `Jws.printToken` of the
+parsed token, which `Spec.printToken_parse` proves is the
+token text it parsed, so the answer's signature still
+matches its signing input. That the tool does this is not
+a theorem: no statement covers `Main.lean` (see below),
+and the tests check it, including the RFC 7515 A.1 HMAC
+on the tool's answer.
 
 ## What is not proved
 

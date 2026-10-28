@@ -251,8 +251,9 @@ separated decimal form as the payload:
 - Field 6: the expected audience. Empty means none.
 
 The answer is `ok:` followed by the character codes of the
-token text as received (the print of the parsed token, proved
-equal to the input) when the token is accepted, `none`
+token text as received (`Jws.printToken` of the parsed token,
+which `Spec.printToken_parse` proves equal to the text parsed)
+when the token is accepted, `none`
 when it is not accepted, and `error` when the request itself
 is malformed (wrong field count, a field that is not a code
 list, a code that is not a Unicode scalar value, a current
