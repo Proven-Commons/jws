@@ -1,8 +1,14 @@
-# JWS compact form: parser and checker — specification
+# JWT in the JWS compact form: parser and claims checker — specification
 
-This is the first slice of the jws repo: parse a JWS in compact
-form (RFC 7515 section 5.2), run a set of shape and claims
-checks on it, and give the received token back unchanged.
+This is the first slice of the jws repo: parse a JSON Web Token
+(RFC 7519) in the JWS compact form (RFC 7515 section 5.2), run a
+set of shape and claims checks on it, and give the received
+token back unchanged. The payload must be a JSON object, a JWT
+claims set. RFC 7515 lets a JWS carry any payload bytes; this
+slice reads JWTs only, so a JWS whose payload is not JSON does
+not parse. RFC 7515 Appendix A.4 (ES512, payload `Payload`) is
+such a token, and is left out of the examples this slice
+accepts.
 
 **This slice does not verify the signature.** A token that
 passes every check below is well formed and its claims are
@@ -12,6 +18,13 @@ key, or that it covers these header and payload bytes at all.
 Signature verification is the second slice and is out of scope
 here. Do not treat a passing answer from this code as a verified
 token.
+
+The algorithm allowlist does not stop key and algorithm
+confusion (an RSA public key used as an HMAC secret, for
+example). A caller's signature checker must use each key with
+exactly one algorithm (RFC 8725 section 3.1), and an allowlist
+should name algorithms of one family only, not HMAC and public
+key algorithms together.
 
 ## Framing
 
@@ -23,7 +36,8 @@ part1 "." part2 "." part3
 
 - Part 1 is the header: UTF-8 JSON text, encoded in base64url.
 - Part 2 is the payload, the claims set: UTF-8 JSON text,
-  encoded in base64url.
+  encoded in base64url. (RFC 7515 allows any bytes here; a JWT
+  payload is a JSON claims set, and this slice reads JWTs.)
 - Part 3 is the signature: raw bytes, encoded in base64url.
 
 Exactly three parts. Two parts or four parts are turned away.
@@ -216,7 +230,7 @@ separated decimal form as the payload:
   time (rules 10 and 11 skipped).
 - Field 3: the allowlist. The field text is the algorithm names
   joined by commas inside the text itself, for example the text
-  `HS256,RS256`. Empty means no algorithms are allowed.
+  `HS256,HS384`. Empty means no algorithms are allowed.
 - Field 4: the required claims, in the same comma joined style.
   Empty means no claims are required.
 - Field 5: the expected issuer. Empty means none.

@@ -1,14 +1,18 @@
-# jws: a JWS compact parser and checker, with a proved round trip
+# jws: a JWT parser and claims checker for the JWS compact form
 
 Status: in progress
 
-A parser and checker for the JWS compact form (RFC 7515)
-in Lean. The parser reads the three base64url parts,
-keeps the first two exactly as received (they are the
-signing input a signature verifier needs), decodes the
-header and payload as JSON, and holds the signature bytes
-unchanged. The checker runs the shape and
-claims rules of `SPEC.md`: the algorithm against a caller
+A parser and claims checker, in Lean, for JSON Web Tokens
+(RFC 7519) in the JWS compact form (RFC 7515). The payload
+must be a JSON object, a JWT claims set: RFC 7515 lets a
+JWS carry any payload bytes, and a JWS whose payload is
+not JSON, such as RFC 7515's own Appendix A.4 example
+(payload `Payload`), does not parse here. The parser
+reads the three base64url parts, keeps the first two
+exactly as received (they are the signing input a
+signature verifier needs), decodes the header and payload
+as JSON, and holds the signature bytes unchanged. The
+checker runs the shape and claims rules of `SPEC.md`: the algorithm against a caller
 allowlist, the required claims, and the `exp`, `nbf`,
 `iss`, and `aud` claims against a context the caller
 supplies. The definitions are in `Jws/Base64url.lean` (the
@@ -31,6 +35,14 @@ and its claims are consistent with the check context; it
 is not thereby verified, and it must never be described as
 a verified token on its own. Signature verification is
 the second slice.
+
+The algorithm allowlist does not stop key and algorithm
+confusion, such as an RSA public key used as an HMAC
+secret. The caller's signature checker must use each key
+with exactly one algorithm (RFC 8725 section 3.1), and an
+allowlist should name algorithms of one family only (for
+example `HS256` alone, or `RS256,RS384`), not HMAC and
+public key algorithms together.
 
 ## How to run it
 
@@ -172,7 +184,7 @@ directly, the same functions the theorems are about.
 - Speed. The code works on lists, which suits proofs,
   not large tokens.
 
-Five readings worth naming, all stated in `SPEC.md` and
+Six readings worth naming, all stated in `SPEC.md` and
 pinned by tests:
 
 - An empty signature part is well formed base64url, but
@@ -207,6 +219,12 @@ pinned by tests:
   section 2 lets a NumericDate be a non-integer), and are
   compared exactly with the current time, a whole number
   of seconds (`SPEC.md` rule 9).
+- The payload must be JSON (a JWT claims set), so a JWS
+  with an arbitrary payload, which RFC 7515 allows, is
+  turned away at parse. RFC 7515 Appendix A.4 (ES512,
+  payload `Payload`) is such a token; the tests run it as
+  a fixed case expecting refusal, and it is left out of
+  the cases expected to pass.
 
 ## What you must trust
 

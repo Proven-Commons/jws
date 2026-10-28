@@ -4,7 +4,7 @@ Written by `python3 tests/run_tests.py`, which drives the built tool `.lake/buil
 
 - Oracle: the SPEC.md rules reimplemented in tests/run_tests.py (Python 3.13), with tokens and decodes from PyJWT 2.15.1 (cryptography 46.0.3)
 - Seed: 20261026
-- Inputs: 466
+- Inputs: 467
 - Failures: 0
 
 ## The oracle and PyJWT
@@ -14,13 +14,13 @@ PyJWT's decode was compared with the oracle's parse on 20 tokens: 20 agreements,
 
 ## Counts
 
-- Total check and request inputs: 466
-- Agreements with the oracle: 466
-- Of the verdict cases: 47 accepted, 409 rejected, 10 malformed requests answered error
+- Total check and request inputs: 467
+- Agreements with the oracle: 467
+- Of the verdict cases: 47 accepted, 410 rejected, 10 malformed requests answered error
 
 ## RFC 7515 fixed cases
 
-The A.5 example is the RFC's unsecured (alg none) compact example; in the final RFC text A.6 and A.7 are JSON Serialization examples, not compact tokens, so the none cases use A.5. The RFC 7519 section 3.1 example token is byte for byte the A.1 token, so it is covered by the A.1 cases.
+The A.5 example is the RFC's unsecured (alg none) compact example; in the final RFC text A.6 and A.7 are JSON Serialization examples, not compact tokens, so the none cases use A.5. The RFC 7519 section 3.1 example token is byte for byte the A.1 token, so it is covered by the A.1 cases. A.4 (ES512) signs the payload `Payload`, which is not JSON: this slice reads JWTs, whose payload is a JSON claims set, so A.4 is a named departure from RFC 7515 and its fixed case expects refusal.
 
 - [ok] A.1 accept (HS256 allowed, now before exp, issuer joe)
 - [ok] A.1 reject (alg not allowed)
@@ -35,6 +35,7 @@ The A.5 example is the RFC's unsecured (alg none) compact example; in the final 
 - [ok] A.2 reject (alg not allowed)
 - [ok] A.3 accept (ES256 allowed, now before exp)
 - [ok] A.3 reject (now equal to exp)
+- [ok] A.4 reject (ES512 allowed; payload "Payload" is not JSON, a JWS this JWT checker leaves out)
 - [ok] A.5 reject (alg none, HS256 allowed)
 - [ok] A.5 reject (alg none, allowlist names none)
 - [ok] A.5 reject (alg none, allowlist names none and HS256)
@@ -46,6 +47,7 @@ The A.5 example is the RFC's unsecured (alg none) compact example; in the final 
 - Named change from review 1 item 2: a header with a `crit` member, of any value, is turned away (SPEC rule 18). The slice understands no extension, and RFC 7515 section 4.1.11 makes a token invalid when `crit` names one the reader does not understand. Fixed cases cover b64, an unknown name, a URI name, an empty list, a string, null, and an escaped spelling; `crit` as a claim name is not a header member and passes.
 - Named change from review 1 item 3: an accepted token is answered with the token text as received, not a canonical reprint, so its signature still matches its signing input. The RFC 7515 A.1 HMAC (with the RFC's key) was checked on the tool's answer for 3 A.1 accept cases, and on the A.1 input itself: verifies.
 - Named change from review 1 item 6: with no expected audience, a token that carries `aud` is turned away (SPEC rule 16). RFC 7519 section 4.1.3 asks a reader that does not identify itself with a value in `aud` to reject the token. PyJWT reads it the same way; some other libraries accept such a token. Generated tokens with `aud` under a context with no audience now expect refusal in the oracle.
+- From review 1 item 9: the allowlist does not stop key and algorithm confusion. The page warns that a caller's signature checker must use each key with exactly one algorithm (RFC 8725 section 3.1) and that an allowlist should name one family. The generated contexts here mix families only as test data for the allowlist rule.
 - The none rule is the exact name `none`. An alg of `None` is a different name and can be allowed.
 - Named change from review 1 item 7: `exp`, `nbf` and `iat` may be non-integers (RFC 7519 section 2) and are compared exactly with the current time (SPEC rule 9). The earlier reading turned every fractional date away; the three fixed cases that pinned it now expect acceptance, and new cases cover fractions a millionth either side of now, equality, `nbf`, and exponents of -999999999.
 - Date claims are judged by value, not by spelling: `2.0e9` and `20000000000e-1` are the number 2000000000, and `1e999999999` compares without ever being written out.

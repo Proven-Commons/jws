@@ -357,6 +357,14 @@ A3 = ("eyJhbGciOiJFUzI1NiJ9." + PAYLOAD_B64 +
       ".DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8ISlSApmWQ"
       "xfKTUJqPP3-Kg6NU1Q")
 A5 = "eyJhbGciOiJub25lIn0." + PAYLOAD_B64 + "."
+# A.4 (ES512) signs the payload "Payload", which is not JSON. The
+# slice reads JWTs, whose payload is a JSON claims set, so A.4 does
+# not parse: a named departure from RFC 7515's arbitrary payload
+# (review 1 item 8).
+A4 = ("eyJhbGciOiJFUzUxMiJ9.UGF5bG9hZA."
+      "AdwMgeerwtHoh-l192l60hp9wAHZFVJbLfD_UxMi70cwnZOYaRI1bKPWROc-mZZq"
+      "wqT2SI-KGDKB34XO0aw_7XdtAG8GaSwFKdCAPZgoXD2YBJZCPEX3xKpRwcdOO8Kp"
+      "EHwJjyqOgzDO7iKvU8vcnwNrmxYbSW9ERBXukOXolLzeO_Jn")
 
 add_check("A.1 accept (HS256 allowed, now before exp, issuer joe)",
           A1, 1300819000, ["HS256"], [], "joe", None)
@@ -385,6 +393,9 @@ add_check("A.2 reject (alg not allowed)", A2, 1300819000, ["HS256"], [],
 add_check("A.3 accept (ES256 allowed, now before exp)", A3, 1300819000,
           ["ES256"], [], None, None)
 add_check("A.3 reject (now equal to exp)", A3, 1300819380, ["ES256"], [],
+          None, None)
+add_check("A.4 reject (ES512 allowed; payload \"Payload\" is not JSON,"
+          " a JWS this JWT checker leaves out)", A4, None, ["ES512"], [],
           None, None)
 add_check("A.5 reject (alg none, HS256 allowed)", A5, 1300819000,
           ["HS256"], [], None, None)
@@ -995,7 +1006,12 @@ def main():
                      " are JSON Serialization examples, not compact"
                      " tokens, so the none cases use A.5. The RFC 7519"
                      " section 3.1 example token is byte for byte the"
-                     " A.1 token, so it is covered by the A.1 cases.")
+                     " A.1 token, so it is covered by the A.1 cases."
+                     " A.4 (ES512) signs the payload `Payload`, which is"
+                     " not JSON: this slice reads JWTs, whose payload is"
+                     " a JSON claims set, so A.4 is a named departure"
+                     " from RFC 7515 and its fixed case expects"
+                     " refusal.")
     lines_out.append("")
     for (name, _, _) in fixed:
         mark = "FAIL" if any(f[0] == name for f in fixed_fail) else "ok"
@@ -1055,6 +1071,13 @@ def main():
                      " libraries accept such a token. Generated tokens"
                      " with `aud` under a context with no audience now"
                      " expect refusal in the oracle.")
+    lines_out.append("- From review 1 item 9: the allowlist does not stop"
+                     " key and algorithm confusion. The page warns that a"
+                     " caller's signature checker must use each key with"
+                     " exactly one algorithm (RFC 8725 section 3.1) and"
+                     " that an allowlist should name one family. The"
+                     " generated contexts here mix families only as test"
+                     " data for the allowlist rule.")
     lines_out.append("- The none rule is the exact name `none`. An alg of"
                      " `None` is a different name and can be allowed.")
     lines_out.append("- Named change from review 1 item 7: `exp`, `nbf`"
