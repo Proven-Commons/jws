@@ -1,0 +1,781 @@
+{
+ "pyjwt": "2.15.1",
+ "cryptography": "46.0.3",
+ "probe_now": 1793208734,
+ "tokens": [
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTQwMDAwMDAwMCwiaWF0IjoxNDAwMDAwMDAwLCJhdWQiOiJhcGkiLCJzdWIiOiJ1c2VyLTEifQ.RHVDPsvhh-43fZEoTqsMBUmtBbmJPG2lrvGkDWLVgNY",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "nbf": 1400000000,
+    "iat": 1400000000,
+    "aud": "api",
+    "sub": "user-1"
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTQwMDAwMDAwMCwiaWF0IjoxNDAwMDAwMDAwLCJhdWQiOiJhcGkiLCJzdWIiOiJ1c2VyLTEifQ.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "nbf": 1400000000,
+    "iat": 1400000000,
+    "aud": "api",
+    "sub": "user-1"
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpc3N1ZXIuZXhhbXBsZSIsImV4cCI6MjAwMDAwMDAwMCwiYXVkIjpbImFwaSIsIndlYiJdfQ.j4GuctX7tsRjT0S7LvligMPqOoUhRRnNrSPzew-uTEg",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "issuer.example",
+    "exp": 2000000000,
+    "aud": [
+     "api",
+     "web"
+    ]
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJpc3N1ZXIuZXhhbXBsZSIsImV4cCI6MjAwMDAwMDAwMCwiYXVkIjpbImFwaSIsIndlYiJdfQ.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "issuer.example",
+    "exp": 2000000000,
+    "aud": [
+     "api",
+     "web"
+    ]
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjIwMDAwMDAwMDB9.JgCO_GqUQnbS0z2hCxJLE9Tpt5SMoZObHBxzGBWuTYQ",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "exp": 2000000000
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJleHAiOjIwMDAwMDAwMDB9.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "exp": 2000000000
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjEyMDAwMDAwMDAsImF1ZCI6ImFwaSJ9.-6hL8p0XV2WK0O8DlGTYm87p7uImaqxSagUS0ECeoR0",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 1200000000,
+    "aud": "api"
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJqb2UiLCJleHAiOjEyMDAwMDAwMDAsImF1ZCI6ImFwaSJ9.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 1200000000,
+    "aud": "api"
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqXHUwMGU5IiwiZXhwIjoyMDAwMDAwMDAwLCJuYW1lIjoiSm9zXHUwMGU5In0.mlBfn_M6Q_3MnK3Dk10TAfUY-xBTB3btAp6tabla1g0",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "jé",
+    "exp": 2000000000,
+    "name": "José"
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJqXHUwMGU5IiwiZXhwIjoyMDAwMDAwMDAwLCJuYW1lIjoiSm9zXHUwMGU5In0.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "jé",
+    "exp": 2000000000,
+    "name": "José"
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTYwMDAwMDAwMH0.Z1prpwAa6ZpIA6bhQP0qrZMcpuOdLElJsLx3X3BL1CE",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "nbf": 1600000000
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTYwMDAwMDAwMH0.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "nbf": 1600000000
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjk5OTk5OTk5OTksImF1ZCI6WyJhIiwiYiIsImMiXSwiYWRtaW4iOnRydWV9.hsTNf8ktrgZf7Pm8wmQIBueRezV4NLvjd1ytemZ857M",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 9999999999,
+    "aud": [
+     "a",
+     "b",
+     "c"
+    ],
+    "admin": true
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJqb2UiLCJleHAiOjk5OTk5OTk5OTksImF1ZCI6WyJhIiwiYiIsImMiXSwiYWRtaW4iOnRydWV9.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 9999999999,
+    "aud": [
+     "a",
+     "b",
+     "c"
+    ],
+    "admin": true
+   }
+  },
+  {
+   "alg": "HS256",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsInNjb3BlIjpbInJlYWQiLCJ3cml0ZSJdLCJuIjo0Mn0.ZHgmq-435Zb2TfD_XlfXJvPw5KqE2PehlbkvgZjNfts",
+   "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "scope": [
+     "read",
+     "write"
+    ],
+    "n": 42
+   }
+  },
+  {
+   "alg": "none",
+   "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsInNjb3BlIjpbInJlYWQiLCJ3cml0ZSJdLCJuIjo0Mn0.",
+   "header": {
+    "alg": "none",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "scope": [
+     "read",
+     "write"
+    ],
+    "n": 42
+   }
+  },
+  {
+   "alg": "RS256",
+   "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTQwMDAwMDAwMCwiaWF0IjoxNDAwMDAwMDAwLCJhdWQiOiJhcGkiLCJzdWIiOiJ1c2VyLTEifQ.eHh3JESuqTsiAGnM9Pynl-EleWdijlxqaMMHdCnH4X8i6pljHNzNonGPbTX1UBhIqHmrfrYPOqkuZVK7VlkDuWjaX3eWV64NBTD87uxARFx9AV-mZHRZUxZuZxQ7Oh9E4frUOc5-W8xTkCbuHTNgh_0g4HT8bC9oYO3rKLBUmrTiuklEMH3ZjLIRvy1ho7501k5aqAqqStB9mbyh5iqSW7tg1GS5gJU5CIBr0KX3zHWsOwM9nAXsg-58RqHK1Nb3jIlL7Wn0pTxwzEcq6Lfghyl98JAzUd9bf1Gf27pZ0_Dl_C9bx0JF9D6C2Kgba9PdcsjMUzZ2_Mw1uxCowqkmKg",
+   "header": {
+    "alg": "RS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "nbf": 1400000000,
+    "iat": 1400000000,
+    "aud": "api",
+    "sub": "user-1"
+   }
+  },
+  {
+   "alg": "RS256",
+   "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpc3N1ZXIuZXhhbXBsZSIsImV4cCI6MjAwMDAwMDAwMCwiYXVkIjpbImFwaSIsIndlYiJdfQ.miB1x7FMvVyARLAsHsV05E2-UOZn9chayNOnMNZryhU_5-mFUx7JHZbwn8N7qKEfaeY0kocjdKyB7sVmrILeZTE134PPLFZPSShlEaTFGwns4jq1OEiHXXEpZPviURkubghxv6fiWtG32biiYlkh_hSIurLTFCXozy-ih0H_no-VHM79qpJFhVSScQK1l_TkqyACBnsax7Cfg22Uz_PFayiuAAIfUpwO9sM5pbeRgqphBwH1iINw4m-qhW3wclm1kb_yFpB19MNEIlslX9L851dptvZHPDYZkjZLOfcQJZd7xU5BYsb2W4KE7fZp_C6s3eweI_XBvby0ZeXwIUIIuw",
+   "header": {
+    "alg": "RS256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "issuer.example",
+    "exp": 2000000000,
+    "aud": [
+     "api",
+     "web"
+    ]
+   }
+  },
+  {
+   "alg": "ES256",
+   "token": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTQwMDAwMDAwMCwiaWF0IjoxNDAwMDAwMDAwLCJhdWQiOiJhcGkiLCJzdWIiOiJ1c2VyLTEifQ.JpwT4nFb2E1YBNyPr_a97qcfg6_mJQ5lJtasSGL4HQWYDvkLGR9YQIXL3Jj4ruOi750esyclJZPzCIxof_Z-kQ",
+   "header": {
+    "alg": "ES256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 2000000000,
+    "nbf": 1400000000,
+    "iat": 1400000000,
+    "aud": "api",
+    "sub": "user-1"
+   }
+  },
+  {
+   "alg": "ES256",
+   "token": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjk5OTk5OTk5OTksImF1ZCI6WyJhIiwiYiIsImMiXSwiYWRtaW4iOnRydWV9.UD-j2oZLgtZdPea9_zrDbXfkRP39SIyCNSEGeDvzPDrtlLZcH-Jlnin2TdM-CT8eyZSRs61A7MLtofAvJid3tA",
+   "header": {
+    "alg": "ES256",
+    "typ": "JWT"
+   },
+   "claims": {
+    "iss": "joe",
+    "exp": 9999999999,
+    "aud": [
+     "a",
+     "b",
+     "c"
+    ],
+    "admin": true
+   }
+  }
+ ],
+ "probes": [
+  {
+   "name": "plain",
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDB9.Dt_RmuAlYFTBusgynL4IRPoc75FZeamwciZmJNXUwZg",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "CR LF and spaces in both parts, as in A.1",
+   "token": "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjIwMDAwMDAwMDAsDQogIm5iZiI6MTQwMDAwMDAwMH0.RdETpN2f7dWYq2lnHWbiAvtT183OfRNQyXq8qIAtmHE",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": "joe",
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "escaped characters in names and values",
+   "token": "eyJcdTAwNjFsZyI6IkhTMjU2In0.eyJcdTAwNjlzcyI6ImpcdTAwZTkiLCJleHAiOjIwMDAwMDAwMDB9._LgGj9tAQtNzLE-EDzOEqO6DICWmJx94dq9fGjUIlcw",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": "jé",
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "duplicate alg, HS256 then none",
+   "token": "eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.RnUdW2kgsB1FTcImw8PXOKE_6f4h7ZXBU7Hq36dWaG4",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (InvalidAlgorithmError)"
+  },
+  {
+   "name": "duplicate alg, none then HS256",
+   "token": "eyJhbGciOiJub25lIiwiYWxnIjoiSFMyNTYifQ.eyJleHAiOjIwMDAwMDAwMDB9.HqieASm9jz33gZvgMKKHYbMSR-SlMhBxzdF1hc1xGLs",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "duplicate alg spelled with an escape",
+   "token": "eyJhbGciOiJub25lIiwiXHUwMDYxbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDB9.YcTtVSxUawh6KYLry5H2NJvYO-Z35oJ1mZ_QPu_zIkM",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "duplicate iss, joe then evil, issuer evil",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImlzcyI6ImV2aWwifQ.d0KO09LX648S7ozKajS0K08JsjBI1mw1jYvZeKDS_2s",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": "evil",
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "duplicate exp, expired then live",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjEwMDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.BtDjYDl_OED-X8ztljI26TiJnyTZfE9m07b0nwl2ygI",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "duplicate name nobody reads",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJmb28iOjEsImV4cCI6MjAwMDAwMDAwMCwiZm9vIjoyfQ.bQrIF7zN_AeW-cn5-YsjodVO5qJ-ffJp7VtD3wYK5lo",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "crit naming b64",
+   "token": "eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.A8DWDRA5kEa3whsdI71dXkwB67fAqydJouM176bhYiY",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (DecodeError)"
+  },
+  {
+   "name": "crit naming an unknown extension",
+   "token": "eyJhbGciOiJIUzI1NiIsImNyaXQiOlsieC11bmtub3duIl0sIngtdW5rbm93biI6MX0.eyJleHAiOjIwMDAwMDAwMDB9.yNRTehy4J4DTwlsTPv7oGezui2gjEF43-5pGFvMs-N4",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (InvalidTokenError)"
+  },
+  {
+   "name": "crit an empty list",
+   "token": "eyJhbGciOiJIUzI1NiIsImNyaXQiOltdfQ.eyJleHAiOjIwMDAwMDAwMDB9.cZyFAIXLq0pBewTZi_aNlEj7eA8QbQ8WhkKgtjbx5b8",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (InvalidTokenError)"
+  },
+  {
+   "name": "crit not a list",
+   "token": "eyJhbGciOiJIUzI1NiIsImNyaXQiOiJleHAifQ.eyJleHAiOjIwMDAwMDAwMDB9.qXjW_bSQRLSj8P0j419CaIdfXn6ln_qxYXAqKN5BLEY",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (InvalidTokenError)"
+  },
+  {
+   "name": "b64 false without crit",
+   "token": "eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2V9.eyJleHAiOjIwMDAwMDAwMDB9.myUKnfGKeYEdTbsrHJFOzH-rrYV89FQZuMxWO4yzPvc",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (DecodeError)"
+  },
+  {
+   "name": "fractional exp",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.B2m48jt3huo2OwqAB5ibr35KN8470Vlnqn6avEzW-T0",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "fractional iat and nbf",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAsImlhdCI6MTQwMDAwMDAwMC4yNSwibmJmIjoxNDAwMDAwMDAwLjc1fQ.MEld2lVeL0GSeow9AnVun3ZTwu1qkjbBqlhN3oDfd4Y",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "exp in exponent form",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIuMGU5fQ.bIoPVKk_qSJgORB2_B557Jsl1xNj9NGxMDcjOQprw7c",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "expired",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE0MDAwMDAwMDB9.XY1CF7sN5ifCsN5TpNj_aMENFNSP9ytnbPiB5YsxSvw",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (ExpiredSignatureError)"
+  },
+  {
+   "name": "not yet valid",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAsIm5iZiI6MTk5OTk5OTk5OX0.4SMXeYW1lplK_ETLlhnzZL84Vj4yARhcGvHi9AWse50",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (ImmatureSignatureError)"
+  },
+  {
+   "name": "iat in the future",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAsImlhdCI6MTk5OTk5OTk5OX0.eO1C8mwxi_QgsGe6HzUw4FjEj4skzChhblQW9p5NqFA",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (ImmatureSignatureError)"
+  },
+  {
+   "name": "exp a string",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOiIyMDAwMDAwMDAwIn0.tWaU8M3_Lqa-jiua1y3oG-u-xcIqHDuRaZa9PsbrDzs",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "aud present, no audience expected",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.PkiGPcwWluHdmVF-v68uByDbMGIq-mfqtRsHNx-7Jk8",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (InvalidAudienceError)"
+  },
+  {
+   "name": "aud present, the same audience expected",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.PkiGPcwWluHdmVF-v68uByDbMGIq-mfqtRsHNx-7Jk8",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": "other-tenant",
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "aud array holding the expected audience",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAsImF1ZCI6WyJhcGkiLCJ3ZWIiXX0.srJzr9KPj60MqeZhQ5MzSkk9ydx9Hh5MC2CCm07jcc8",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": "web",
+    "required": []
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "aud array without the expected audience",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAsImF1ZCI6WyJhcGkiLCJ3ZWIiXX0.srJzr9KPj60MqeZhQ5MzSkk9ydx9Hh5MC2CCm07jcc8",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": "mobile",
+    "required": []
+   },
+   "pyjwt": "reject (InvalidAudienceError)"
+  },
+  {
+   "name": "issuer expected, iss missing",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDB9.S5nIpKib63xhZGXpmWZKfWRbhCwQKiDGB8EvWWd3aIs",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": "joe",
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (MissingRequiredClaimError)"
+  },
+  {
+   "name": "issuer expected, iss wrong",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJib2IiLCJleHAiOjIwMDAwMDAwMDB9.OZczHeAW__3oJNmhPGWq6BEmS8ceCKxStX1lm_svMxg",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": "joe",
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (InvalidIssuerError)"
+  },
+  {
+   "name": "required claim missing",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDB9.S5nIpKib63xhZGXpmWZKfWRbhCwQKiDGB8EvWWd3aIs",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": [
+     "sub"
+    ]
+   },
+   "pyjwt": "reject (MissingRequiredClaimError)"
+  },
+  {
+   "name": "required claim present",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAsInN1YiI6InUifQ.O4b-ozoslJYAyU_0S2_1q-OnrW3HEc2Oaf_6GHBoZdg",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": [
+     "sub"
+    ]
+   },
+   "pyjwt": "accept"
+  },
+  {
+   "name": "alg outside the allowlist",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDB9.S5nIpKib63xhZGXpmWZKfWRbhCwQKiDGB8EvWWd3aIs",
+   "context": {
+    "allow": [
+     "HS384"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (InvalidAlgorithmError)"
+  },
+  {
+   "name": "alg none",
+   "token": "eyJhbGciOiJub25lIn0.eyJleHAiOjIwMDAwMDAwMDB9.",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (InvalidAlgorithmError)"
+  },
+  {
+   "name": "empty signature",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDB9.",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (InvalidSignatureError)"
+  },
+  {
+   "name": "payload not JSON",
+   "token": "eyJhbGciOiJIUzI1NiJ9.UGF5bG9hZA.fhR7UeQoJw9Yp7oHqQayOPD9J4PYGYTgPSrqXjkjtA4",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (DecodeError)"
+  },
+  {
+   "name": "payload a JSON array",
+   "token": "eyJhbGciOiJIUzI1NiJ9.WzEsMl0.n2S-vxy54E2BWTxxZsmm4JwpIVuZFN5rl1BM2S7xES4",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (DecodeError)"
+  },
+  {
+   "name": "header an array",
+   "token": "WyJIUzI1NiJd.eyJleHAiOjIwMDAwMDAwMDB9.FH3JEdEGAjaDTqPz9xIbckZrmGI4j8aE6l50FD5Gleo",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "reject (DecodeError)"
+  },
+  {
+   "name": "repeat inside a nested object",
+   "token": "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAsImN0eCI6eyJhIjoxLCJhIjoyfX0.rzox9_bowiomb1LSMA3rktUc2Uu6UQpyW85Z9p6UAmU",
+   "context": {
+    "allow": [
+     "HS256"
+    ],
+    "issuer": null,
+    "audience": null,
+    "required": []
+   },
+   "pyjwt": "accept"
+  }
+ ]
+}

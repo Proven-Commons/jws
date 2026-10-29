@@ -1,0 +1,69 @@
+# Read by bar/check.py in Proven-Commons/mission.
+# See playbook/verified-bar.md there for what each field means.
+
+[project]
+name = "jws"
+# "in-progress" until every bar item passes, then "verified".
+status = "in-progress"
+page = "README.md"
+# GitHub handles of everyone who wrote the specification.
+spec_authors = ["abu-aska", "zero-aska"]
+# The program people run. A change to it voids the approval.
+entry_points = ["Main.lean"]
+
+[spec]
+files = ["SPEC.md", "Spec.lean", "Spec/Defs.lean"]
+# The code under proof: the functions the statements are about.
+code = [
+  # The token value, its constructor and fields.
+  "Jws.Token", "Jws.Token.mk", "Jws.Token.headerSeg", "Jws.Token.payloadSeg",
+  "Jws.Token.header", "Jws.Token.claims", "Jws.Token.sig",
+  # The framing: split and join at the dots, the printer, the parser,
+  # and the token made from values.
+  "Jws.splitSep", "Jws.joinSep", "Jws.printToken", "Jws.parseToken",
+  "Jws.makeToken",
+  # The exact decimal reading of claim numbers, which the check uses.
+  "Jws.NumVal", "Jws.NumVal.mk", "Jws.NumVal.neg", "Jws.NumVal.sig",
+  "Jws.NumVal.exp", "Jws.digitsVal", "Jws.strip", "Jws.mkNumVal",
+  "Jws.numVal", "Jws.numVal.finish", "Jws.numVal.withExp", "Jws.NumVal.ofInt",
+  "Jws.numDigits", "Jws.magCmp", "Jws.NumVal.cmp",
+  # The check: the context, the claim reading, the accept function.
+  "Jws.Context", "Jws.Context.mk", "Jws.Context.allow", "Jws.Context.now",
+  "Jws.Context.required", "Jws.Context.issuer", "Jws.Context.audience",
+  "Jws.ClaimDate", "Jws.ClaimDate.absent",
+  "Jws.ClaimDate.bad", "Jws.ClaimDate.ok", "Jws.lookup", "Jws.namesUnique",
+  "Jws.dateClaim", "Jws.issShapeOk", "Jws.audShapeOk", "Jws.audOk",
+  "Jws.accept",
+  # Base64url, strict, no padding.
+  "Jws.Base64url.char", "Jws.Base64url.encode", "Jws.Base64url.value",
+  "Jws.Base64url.decode",
+  # The strict UTF-8 layer the header and payload pass through.
+  "Jws.Utf8.encodeChar", "Jws.Utf8.encode", "Jws.Utf8.contVal",
+  "Jws.Utf8.decode",
+  # The JSON value the token parts hold, its printer, and its
+  # well formedness, all carried in from the json slice.
+  "Json.Json", "Json.Json.null", "Json.Json.bool", "Json.Json.num",
+  "Json.Json.str", "Json.Json.arr", "Json.Json.obj",
+  "Json.hexDigits", "Json.hexDigit", "Json.escape", "Json.escapeAll",
+  "Json.printStr", "Json.join", "Json.print", "Json.printPair",
+  "Json.IsDigit", "Json.FracOk", "Json.ExpOk", "Json.WFNum", "Json.WF",
+  # The JSON reader the token parser calls.
+  "Json.isWs", "Json.skipWs", "Json.isDigit", "Json.hexVal",
+  "Json.simpleEscape", "Json.parseStrBody", "Json.takeDigits",
+  "Json.parseIntPart", "Json.parseFracOpt", "Json.parseExpOpt",
+  "Json.parseNumber", "Json.parseValue", "Json.parseEls",
+  "Json.parseObjEls", "Json.parse",
+]
+
+# One entry per approval, added in a pull request the reviewer approves.
+# [[spec.approval]]
+# reviewer = "github-handle"
+# date = "2026-11-02"
+# sha256 = "..."
+# record = "https://github.com/Proven-Commons/jws/pull/<n>"
+
+[tests]
+results = "tests/TEST-RESULTS.md"
+command = "python3 tests/run_tests.py"
+files = ["tests/run_tests.py", "tests/make_pyjwt_corpus.py",
+         "tests/pyjwt_corpus.json", "tests/requirements.txt"]
