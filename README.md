@@ -22,14 +22,14 @@ supplies. The definitions are in `Jws/Base64url.lean`
 codec), and `Jws/Token.lean` (the framing, the claims
 reading, and the checker). The JSON parser, printer, value type, and
 round trip proof are the json repo's, carried in unchanged
-under `Json/` and `Proofs/RoundTrip.lean`, because the
+under `Json/` and `Jws/Proofs/RoundTrip.lean`, because the
 repos in this org do not import each other. The rules are
 written out in `SPEC.md`.
 
-The statements a reviewer approves are in `Spec.lean`,
-with the definitions in `Spec/Defs.lean` that give the
+The statements a reviewer approves are in `Jws/Spec.lean`,
+with the definitions in `Jws/Spec/Defs.lean` that give the
 decimal value of a JSON number text, and their proofs in
-`Proofs/SpecProofs.lean`. No reviewer has approved them
+`Jws/Proofs/SpecProofs.lean`. No reviewer has approved them
 yet, so this project is not called verified.
 
 One limit stands up front: this slice does not verify a
@@ -93,48 +93,48 @@ venv/bin/python tests/make_pyjwt_corpus.py
 ## What is proved
 
 Each claim below names the theorem behind it. The
-theorems are stated in `Spec.lean` (the challenge file,
+theorems are stated in `Jws/Spec.lean` (the challenge file,
 where they end in `sorry`) and proved in
-`Proofs/SpecProofs.lean`, under the same names.
+`Jws/Proofs/SpecProofs.lean`, under the same names.
 `comparator.json` lists all of them.
 
 | Claim | Theorem |
 |-------|---------|
-| Printing a parsed token gives back the text that was parsed, byte for byte. | `Spec.printToken_parse` |
-| A parsed token holds the first two parts of the text as received, the header and claims values those parts decode to (the base64url decoder, the UTF-8 decoder, then the JSON parser), and signature bytes whose base64url is the third part; the text has exactly those three parts. Each of the two decoders accepts only its encoder's output, as the rows below prove. | `Spec.parseToken_reads` |
-| Parsing the printed form of a token made with `Jws.makeToken` from header and claims values gives that token back, for values that are well formed in the json slice's sense. | `Spec.parseToken_print` |
-| Decoding the base64url encoding of any bytes gives the bytes back. | `Spec.decode_encode` |
-| Encoding what the base64url decoder returned gives the decoded text back: the decoder accepts only the canonical, unpadded encoding of its bytes. | `Spec.encode_decode` |
-| Decoding the UTF-8 encoding of any text gives the text back. | `Spec.utf8_decode_encode` |
-| Encoding what the UTF-8 decoder returned, with this repo's encoder `Jws.Utf8.encode`, gives the decoded bytes back: the decoder accepts only that encoder's output for the text it returns. That the encoder writes the standard encoding is not proved (see What is not proved). | `Spec.utf8_encode_decode` |
-| The UTF-8 decoder turns away the overlong forms C0 80, E0 80 80 and F0 80 80 80, the encoded surrogate ED A0 80, F4 90 80 80 (above U+10FFFF), a stray continuation byte 80, the truncated E2 82, and the five byte lead F8. | `Spec.utf8_rejects_ill_formed` |
-| The RFC 7515 A.1 token is accepted when HS256 is allowed and the issuer must be `joe`, with no current time supplied. | `Spec.accepts_rfc_a1` |
-| A hand built token with header `{"alg":"HS256"}`, claims `{"iss":"joe","exp":2000000000}`, and a 32 byte signature is accepted under HS256 allowed, current time 1500000000, and issuer `joe`. | `Spec.accepts_hand_built` |
-| The RFC 7515 A.5 unsecured token (algorithm `none`, empty signature part) is refused when HS256 is the allowed algorithm. | `Spec.rejects_unsecured_none` |
-| The A.5 token is refused when the allowlist itself names `none`. Such a context refuses every token: `Spec.accept_sound` proves that the context of an accepted token has no `none` on its allowlist. | `Spec.rejects_unsecured_none_when_allowlist_names_none`, `Spec.accept_sound` |
-| The A.5 token is refused when the allowlist names `none` alongside HS256. | `Spec.rejects_unsecured_none_when_allowlist_mixes_none` |
-| The A.1 token with its signature part emptied is refused, under a context that accepts the token as it stands. In general, an accepted token's signature is not empty (`Spec.accept_sound`). | `Spec.rejects_empty_signature`, `Spec.accept_sound` |
-| The A.1 token is refused when its algorithm, HS256, is outside the allowlist (RS256 alone). In general, an accepted token's `alg` is on the allowlist (`Spec.accept_sound`). | `Spec.rejects_alg_outside_allowlist`, `Spec.accept_sound` |
-| The hand built token with a padding character `=` after its first part does not parse. In general, every part of a parsed token is the canonical, unpadded base64url encoding of its bytes (`Spec.parseToken_reads` with `Spec.encode_decode`). | `Spec.rejects_part_not_base64url`, `Spec.parseToken_reads`, `Spec.encode_decode` |
-| The hand built token whose header part decodes to the JSON array `["HS256"]` is refused. In general, an accepted token's header is a JSON object (`Spec.accept_sound`). | `Spec.rejects_header_not_object`, `Spec.accept_sound` |
-| When the check accepts a token, under any context: the allowlist does not name `none`; the signature is not empty; the header and the claims are JSON objects with no repeated member name; the header has no `crit` member; the header's `alg` is a string other than `none`, on the allowlist; every required claim is present; `exp`, `nbf` and `iat`, when present, are JSON numbers, and when a current time is given it is before `exp` and not before `nbf`, as the checker's decimal comparison (`Jws.NumVal.cmp` on `Jws.numVal`) orders them, which `Spec.numVal_cmp_now` below proves exact; `iss`, when present, is a string; `aud`, when present, is a string or an array of strings; when an issuer is expected, `iss` is that string; when no audience is expected there is no `aud`; and when one is, `aud` is that string or an array holding it. | `Spec.accept_sound` |
-| When the check accepts a token, under any context, its header and its claims are JSON objects and neither repeats a member name. | `Spec.accept_names_unique` |
-| The token `eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","alg":"none"}`, parses and is refused under every context. | `Spec.rejects_duplicate_alg` |
-| The token whose claims are `{"iss":"joe","exp":2000000000,"iss":"evil"}` (header `{"alg":"HS256"}`, signature bytes 01 02 03) parses and is refused under every context. | `Spec.rejects_duplicate_iss` |
-| When the check accepts a token, under any context, its header is a JSON object with no `crit` member. | `Spec.accept_no_crit` |
-| The token `eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","b64":false,"crit":["b64"]}`, parses and is refused under every context. | `Spec.rejects_crit_b64` |
-| The token `eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.AQID`, whose claims are `{"exp":2000000000.5}`, parses and is accepted at the current time 2000000000 with HS256 allowed: a fractional expiry is compared exactly. | `Spec.accepts_fractional_exp_before` |
-| The same token is refused at the current time 2000000001, after it expired. | `Spec.rejects_fractional_exp_after` |
-| `Jws.NumVal.cmp`, the comparison the date rules use, compares exact decimal values: for any power of ten `10^m` with `m` at most both exponents, it orders two number values as their values written as whole numbers over `10^m` (`Spec.atBase`, in `Spec/Defs.lean`). | `Spec.cmp_exact` |
-| `Jws.numVal` reads every number text of the JSON grammar (an optional minus sign, integer digits, optional fraction digits, an optional exponent part) and gives the text's decimal value: the sign, the integer and fraction digits read as one whole number (`Spec.digitsValue`), and ten to the exponent (`Spec.expValue`) less the count of fraction digits. | `Spec.numVal_value` |
-| The comparison the `exp` and `nbf` rules make between the current time and a claim's number text of the JSON grammar is the exact comparison of the whole number with the text's decimal value. | `Spec.numVal_cmp_now` |
-| The hand built token with claims `{"exp":-1}` (header `{"alg":"HS256"}`, the 32 byte signature) is refused at the current time 0 with HS256 allowed. | `Spec.rejects_negative_exp` |
-| The same header and signature with claims `{"exp":-0.5}` are accepted at the current time -1. | `Spec.accepts_negative_fraction_exp` |
-| The token `eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.AQID`, whose claims are `{"iss":"joe","exp":2000000000,"aud":"other-tenant"}`, parses and is refused when HS256 is allowed, the current time is 1500000000, the issuer must be `joe`, and no audience is expected. | `Spec.rejects_aud_without_audience` |
-| The same token is accepted under the same context when the expected audience is `other-tenant`. | `Spec.accepts_aud_with_audience` |
+| Printing a parsed token gives back the text that was parsed, byte for byte. | `Jws.Spec.printToken_parse` |
+| A parsed token holds the first two parts of the text as received, the header and claims values those parts decode to (the base64url decoder, the UTF-8 decoder, then the JSON parser), and signature bytes whose base64url is the third part; the text has exactly those three parts. Each of the two decoders accepts only its encoder's output, as the rows below prove. | `Jws.Spec.parseToken_reads` |
+| Parsing the printed form of a token made with `Jws.makeToken` from header and claims values gives that token back, for values that are well formed in the json slice's sense. | `Jws.Spec.parseToken_print` |
+| Decoding the base64url encoding of any bytes gives the bytes back. | `Jws.Spec.decode_encode` |
+| Encoding what the base64url decoder returned gives the decoded text back: the decoder accepts only the canonical, unpadded encoding of its bytes. | `Jws.Spec.encode_decode` |
+| Decoding the UTF-8 encoding of any text gives the text back. | `Jws.Spec.utf8_decode_encode` |
+| Encoding what the UTF-8 decoder returned, with this repo's encoder `Jws.Utf8.encode`, gives the decoded bytes back: the decoder accepts only that encoder's output for the text it returns. That the encoder writes the standard encoding is not proved (see What is not proved). | `Jws.Spec.utf8_encode_decode` |
+| The UTF-8 decoder turns away the overlong forms C0 80, E0 80 80 and F0 80 80 80, the encoded surrogate ED A0 80, F4 90 80 80 (above U+10FFFF), a stray continuation byte 80, the truncated E2 82, and the five byte lead F8. | `Jws.Spec.utf8_rejects_ill_formed` |
+| The RFC 7515 A.1 token is accepted when HS256 is allowed and the issuer must be `joe`, with no current time supplied. | `Jws.Spec.accepts_rfc_a1` |
+| A hand built token with header `{"alg":"HS256"}`, claims `{"iss":"joe","exp":2000000000}`, and a 32 byte signature is accepted under HS256 allowed, current time 1500000000, and issuer `joe`. | `Jws.Spec.accepts_hand_built` |
+| The RFC 7515 A.5 unsecured token (algorithm `none`, empty signature part) is refused when HS256 is the allowed algorithm. | `Jws.Spec.rejects_unsecured_none` |
+| The A.5 token is refused when the allowlist itself names `none`. Such a context refuses every token: `Jws.Spec.accept_sound` proves that the context of an accepted token has no `none` on its allowlist. | `Jws.Spec.rejects_unsecured_none_when_allowlist_names_none`, `Jws.Spec.accept_sound` |
+| The A.5 token is refused when the allowlist names `none` alongside HS256. | `Jws.Spec.rejects_unsecured_none_when_allowlist_mixes_none` |
+| The A.1 token with its signature part emptied is refused, under a context that accepts the token as it stands. In general, an accepted token's signature is not empty (`Jws.Spec.accept_sound`). | `Jws.Spec.rejects_empty_signature`, `Jws.Spec.accept_sound` |
+| The A.1 token is refused when its algorithm, HS256, is outside the allowlist (RS256 alone). In general, an accepted token's `alg` is on the allowlist (`Jws.Spec.accept_sound`). | `Jws.Spec.rejects_alg_outside_allowlist`, `Jws.Spec.accept_sound` |
+| The hand built token with a padding character `=` after its first part does not parse. In general, every part of a parsed token is the canonical, unpadded base64url encoding of its bytes (`Jws.Spec.parseToken_reads` with `Jws.Spec.encode_decode`). | `Jws.Spec.rejects_part_not_base64url`, `Jws.Spec.parseToken_reads`, `Jws.Spec.encode_decode` |
+| The hand built token whose header part decodes to the JSON array `["HS256"]` is refused. In general, an accepted token's header is a JSON object (`Jws.Spec.accept_sound`). | `Jws.Spec.rejects_header_not_object`, `Jws.Spec.accept_sound` |
+| When the check accepts a token, under any context: the allowlist does not name `none`; the signature is not empty; the header and the claims are JSON objects with no repeated member name; the header has no `crit` member; the header's `alg` is a string other than `none`, on the allowlist; every required claim is present; `exp`, `nbf` and `iat`, when present, are JSON numbers, and when a current time is given it is before `exp` and not before `nbf`, as the checker's decimal comparison (`Jws.NumVal.cmp` on `Jws.numVal`) orders them, which `Jws.Spec.numVal_cmp_now` below proves exact; `iss`, when present, is a string; `aud`, when present, is a string or an array of strings; when an issuer is expected, `iss` is that string; when no audience is expected there is no `aud`; and when one is, `aud` is that string or an array holding it. | `Jws.Spec.accept_sound` |
+| When the check accepts a token, under any context, its header and its claims are JSON objects and neither repeats a member name. | `Jws.Spec.accept_names_unique` |
+| The token `eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","alg":"none"}`, parses and is refused under every context. | `Jws.Spec.rejects_duplicate_alg` |
+| The token whose claims are `{"iss":"joe","exp":2000000000,"iss":"evil"}` (header `{"alg":"HS256"}`, signature bytes 01 02 03) parses and is refused under every context. | `Jws.Spec.rejects_duplicate_iss` |
+| When the check accepts a token, under any context, its header is a JSON object with no `crit` member. | `Jws.Spec.accept_no_crit` |
+| The token `eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID`, whose header is `{"alg":"HS256","b64":false,"crit":["b64"]}`, parses and is refused under every context. | `Jws.Spec.rejects_crit_b64` |
+| The token `eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.AQID`, whose claims are `{"exp":2000000000.5}`, parses and is accepted at the current time 2000000000 with HS256 allowed: a fractional expiry is compared exactly. | `Jws.Spec.accepts_fractional_exp_before` |
+| The same token is refused at the current time 2000000001, after it expired. | `Jws.Spec.rejects_fractional_exp_after` |
+| `Jws.NumVal.cmp`, the comparison the date rules use, compares exact decimal values: for any power of ten `10^m` with `m` at most both exponents, it orders two number values as their values written as whole numbers over `10^m` (`Jws.Spec.atBase`, in `Jws/Spec/Defs.lean`). | `Jws.Spec.cmp_exact` |
+| `Jws.numVal` reads every number text of the JSON grammar (an optional minus sign, integer digits, optional fraction digits, an optional exponent part) and gives the text's decimal value: the sign, the integer and fraction digits read as one whole number (`Jws.Spec.digitsValue`), and ten to the exponent (`Jws.Spec.expValue`) less the count of fraction digits. | `Jws.Spec.numVal_value` |
+| The comparison the `exp` and `nbf` rules make between the current time and a claim's number text of the JSON grammar is the exact comparison of the whole number with the text's decimal value. | `Jws.Spec.numVal_cmp_now` |
+| The hand built token with claims `{"exp":-1}` (header `{"alg":"HS256"}`, the 32 byte signature) is refused at the current time 0 with HS256 allowed. | `Jws.Spec.rejects_negative_exp` |
+| The same header and signature with claims `{"exp":-0.5}` are accepted at the current time -1. | `Jws.Spec.accepts_negative_fraction_exp` |
+| The token `eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.AQID`, whose claims are `{"iss":"joe","exp":2000000000,"aud":"other-tenant"}`, parses and is refused when HS256 is allowed, the current time is 1500000000, the issuer must be `joe`, and no audience is expected. | `Jws.Spec.rejects_aud_without_audience` |
+| The same token is accepted under the same context when the expected audience is `other-tenant`. | `Jws.Spec.accepts_aud_with_audience` |
 
 The token theorems rest on the proofs in
-`Proofs/Token.lean`. The print of a parsed token is the
+`Jws/Proofs/Token.lean`. The print of a parsed token is the
 received text because the token keeps the first two parts
 as received and the strict base64url decoder accepts a
 signature part only when it is the canonical encoding of
@@ -142,15 +142,15 @@ its bytes (`Jws.Base64url.Proofs.encode_decode`).
 `Jws.Proofs.parseToken_print` is a chain of the three
 round trips under it, the JSON text round trip
 (`Json.Proofs.parse_print`, carried in with the JSON
-code), the UTF-8 round trip (`Spec.utf8_decode_encode`),
-and the base64url round trip (`Spec.decode_encode`). The
+code), the UTF-8 round trip (`Jws.Spec.utf8_decode_encode`),
+and the base64url round trip (`Jws.Spec.decode_encode`). The
 base64url and UTF-8 layers prove both directions, so each
 decoder is exactly the inverse of its encoder; the
-converse directions (`Spec.encode_decode`,
-`Spec.utf8_encode_decode`) are proved in
-`Proofs/B64.lean` and `Proofs/Utf8.lean`. The theorems about acceptance are
-proved in `Proofs/Check.lean`, and the theorems about the
-value of a number in `Proofs/Num.lean`. The single token theorems
+converse directions (`Jws.Spec.encode_decode`,
+`Jws.Spec.utf8_encode_decode`) are proved in
+`Jws/Proofs/B64.lean` and `Jws/Proofs/Utf8.lean`. The theorems about acceptance are
+proved in `Jws/Proofs/Check.lean`, and the theorems about the
+value of a number in `Jws/Proofs/Num.lean`. The single token theorems
 are named fixed cases in the test harness, run through
 the same `Jws.parseToken` and `Jws.accept` the command
 line tool calls. Those with one context are checked in
@@ -168,7 +168,7 @@ The command line tool in `Main.lean` calls
 `Jws.parseToken`, `Jws.accept`, and `Jws.printToken`
 directly, the same functions the theorems are about. It
 answers an accepted token with `Jws.printToken` of the
-parsed token, which `Spec.printToken_parse` proves is the
+parsed token, which `Jws.Spec.printToken_parse` proves is the
 token text it parsed, so the answer's signature still
 matches its signing input. That the tool does this is not
 a theorem: no statement covers `Main.lean` (see below),
@@ -182,7 +182,7 @@ on the tool's answer.
   below), and no theorem covers them.
 - That the checker accepts every token `SPEC.md` says it
   should, beyond the single inputs the theorems above
-  pin. `Spec.accept_sound` proves the other direction,
+  pin. `Jws.Spec.accept_sound` proves the other direction,
   that an accepted token meets every rule; that a token
   meeting every rule is accepted (completeness) rests on
   the tests: the RFC examples, the mutation cases, and the
@@ -199,11 +199,11 @@ on the tool's answer.
   malformed JSON cases here.
 - That `Jws.Utf8.encode` writes the standard UTF-8
   encoding (RFC 3629), each character in its shortest
-  form. `Spec.utf8_encode_decode` says the decoder accepts
+  form. `Jws.Spec.utf8_encode_decode` says the decoder accepts
   only this encoder's output, so whether the decoder
   accepts exactly standard UTF-8 rests on the encoder,
   and no theorem compares it with RFC 3629.
-  `Spec.utf8_rejects_ill_formed` pins one overlong form of
+  `Jws.Spec.utf8_rejects_ill_formed` pins one overlong form of
   each length, an encoded surrogate, a value above
   U+10FFFF, a stray continuation byte, a truncated
   sequence and a five byte lead. The tests send Python's
@@ -216,15 +216,15 @@ on the tool's answer.
   whitespace a sender may have used), and the json
   slice proves only the parse-after-print direction.
   The token therefore keeps its received parts, and
-  `Spec.parseToken_print` is stated for tokens made from
+  `Jws.Spec.parseToken_print` is stated for tokens made from
   values with `Jws.makeToken`.
 - That a token value built by hand, not by `parseToken`
   or `makeToken`, has parts and values that match: the
   `Token` structure does not enforce it, and the theorems
   cover only those two ways of making one.
 - That the JSON parser hands the checker only number
-  texts of the JSON grammar. `Spec.numVal_value` and
-  `Spec.numVal_cmp_now` cover every text of the grammar;
+  texts of the JSON grammar. `Jws.Spec.numVal_value` and
+  `Jws.Spec.numVal_cmp_now` cover every text of the grammar;
   the json slice's parser checks the grammar before it
   builds a number, but no theorem here says so. The tests
   cover it, comparing the date rules with Python's
@@ -246,13 +246,13 @@ pinned by tests:
   algorithm name `none` is turned away outright, together
   with any context whose allowlist names `none`, so the
   none case never reaches acceptance. The theorem
-  `Spec.rejects_empty_signature` pins the emptied
+  `Jws.Spec.rejects_empty_signature` pins the emptied
   signature on the RFC's own A.1 token.
 - A header or claims object that repeats a member name
   is turned away (`SPEC.md` rule 17), whichever copy
   would have passed: RFC 7515 section 4 and RFC 7519
   section 4 allow a reader only that or reading the last
-  copy. `Spec.accept_names_unique` proves it for every
+  copy. `Jws.Spec.accept_names_unique` proves it for every
   accepted token. Objects nested inside the header or the
   claims are not checked for repeated names, because no
   rule reads a member of a nested object.
@@ -260,7 +260,7 @@ pinned by tests:
   `crit` holds (`SPEC.md` rule 18): this slice
   understands no extension, and RFC 7515 section 4.1.11
   makes a token invalid when `crit` names one the reader
-  does not understand. `Spec.accept_no_crit` proves it
+  does not understand. `Jws.Spec.accept_no_crit` proves it
   for every accepted token.
 - With no expected audience, a token that carries `aud`
   is turned away (`SPEC.md` rule 16): RFC 7519 section
@@ -322,7 +322,7 @@ pinned by tests:
    build clean. This also builds `.lake/build/bin/jws`,
    which the test harness runs.
 2. `lake comparator --paranoid`: builds the challenge
-   file `Spec.lean` and the proofs in a sandbox and
+   file `Jws/Spec.lean` and the proofs in a sandbox and
    checks that each theorem named in `comparator.json`
    proves exactly the statement in the challenge file,
    uses no axiom but the three standard ones, and is

@@ -22,7 +22,7 @@ import Jws
 
   The answer is `ok:` and the codes of the token text as
   received when the token is accepted (`Jws.printToken` of the
-  parsed token, which `Spec.printToken_parse` proves is the
+  parsed token, which `Jws.Spec.printToken_parse` proves is the
   received text, so its signing input still matches its
   signature), `none` when it is not, and `error` when the request
   itself is malformed.

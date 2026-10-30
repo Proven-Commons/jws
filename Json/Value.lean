@@ -1,6 +1,6 @@
 /-
   The JSON value type, the canonical printer, and the well formed
-  predicate that the round trip proof in `Proofs` uses.
+  predicate that the round trip proof in `Jws.Proofs` uses.
 
   A number is held as its source text. The printer writes that text
   back word for word, and no claim is made about the numeric value.

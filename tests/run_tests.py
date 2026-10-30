@@ -22,7 +22,7 @@ Python. The inputs come in six groups:
    and nbf equal to now, fractional and negative dates,
    audience arrays that do and do not hold the expected value,
    repeated names, crit, and more. Several of these are the
-   single inputs the theorems in Spec.lean pin, by name.
+   single inputs the theorems in Jws/Spec.lean pin, by name.
 
 3. Malformed requests that must be answered with `error`,
    among them an empty name (a leading, trailing or doubled
@@ -220,7 +220,7 @@ def oracle_check(token_text, now, allow, required, issuer, audience):
     """The token text as received when accepted, else None. The
     tool answers an accepted token with Jws.printToken of the parsed
     token, which keeps the two first parts as received
-    (Spec.printToken_parse), so the answer is the input itself.
+    (Jws.Spec.printToken_parse), so the answer is the input itself.
 
     now is None for no time comparisons. allow, required are
     lists of names. issuer, audience are strings or None."""

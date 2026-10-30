@@ -1,17 +1,17 @@
 /-
-  The definitions the statements in `Spec.lean` use besides the code
+  The definitions the statements in `Jws/Spec.lean` use besides the code
   under proof. They give the decimal value of a JSON number text,
   written from RFC 8259 section 6 (the number grammar) and plain
   positional notation, separately from the checker's own reading
   (`Jws.numVal` and `Jws.NumVal.cmp` in `Jws/Token.lean`). The
-  statements in `Spec.lean` tie the checker's reading to these.
+  statements in `Jws/Spec.lean` tie the checker's reading to these.
 
   This file is part of the specification: a reviewer approves it
-  with `Spec.lean` and `SPEC.md`. It imports nothing from the
+  with `Jws/Spec.lean` and `SPEC.md`. It imports nothing from the
   project.
 -/
 
-namespace Spec
+namespace Jws.Spec
 
 /-- The value of a run of decimal digit characters, most significant
     first: each digit times ten to the count of digits after it. -/
@@ -44,4 +44,4 @@ def numberText (neg : Bool) (ints frac ex : List Char) : List Char :=
 def atBase (neg : Bool) (sig : Nat) (exp m : Int) : Int :=
   (if neg then -1 else 1) * ((sig * 10 ^ (exp - m).toNat : Nat) : Int)
 
-end Spec
+end Jws.Spec

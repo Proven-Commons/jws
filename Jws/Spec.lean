@@ -3,7 +3,7 @@
 
   A reviewer who did not write this file approves it, and
   `bar.toml` records the SHA-256 it had then. The proofs live
-  in `Proofs` (`Proofs/SpecProofs.lean`); `lake comparator`
+  in `Jws.Proofs` (`Jws/Proofs/SpecProofs.lean`); `lake comparator`
   checks that each one proves exactly the statement written
   here. The `sorry` below is expected in this file only.
 
@@ -12,27 +12,27 @@
   carried into this repo (`Json/Value.lean` and
   `Json/Parse.lean`), the code under proof named in
   `bar.toml`. The statements about the value of a number also
-  use `Spec/Defs.lean`: the decimal value of a JSON number
+  use `Jws/Spec/Defs.lean`: the decimal value of a JSON number
   text, written from RFC 8259 separately from the checker's
   own reading. That file is part of the specification too.
 -/
 
 import Jws
-import Spec.Defs
+import Jws.Spec.Defs
 
 open Jws
 
 /-! ## The round trips
 
 The statements the slice stands on. Each one is the statement
-of the proved theorem of the same shape in `Proofs`. -/
+of the proved theorem of the same shape in `Jws.Proofs`. -/
 
 /-- Printing a parsed token gives the received text back, byte
     for byte. The two first parts are kept as received, so the
     JWS Signing Input a verifier needs is never rebuilt from the
     JSON values; the signature part is the base64url of the
     signature bytes. -/
-theorem Spec.printToken_parse (s : List Char) (t : Token)
+theorem Jws.Spec.printToken_parse (s : List Char) (t : Token)
     (h : parseToken s = some t) :
     printToken t = s := sorry
 
@@ -43,9 +43,9 @@ theorem Spec.printToken_parse (s : List Char) (t : Token)
     to through the base64url decoder, the UTF-8 decoder, and the
     JSON parser. So a parser that kept the right parts but made
     up the values fails this statement. Each of the two decoders
-    accepts only its encoder's output: see `Spec.encode_decode`
-    and `Spec.utf8_encode_decode` below. -/
-theorem Spec.parseToken_reads (s : List Char) (t : Token)
+    accepts only its encoder's output: see `Jws.Spec.encode_decode`
+    and `Jws.Spec.utf8_encode_decode` below. -/
+theorem Jws.Spec.parseToken_reads (s : List Char) (t : Token)
     (h : parseToken s = some t) :
     splitSep '.' s = [t.headerSeg, t.payloadSeg, Base64url.encode t.sig] ∧
     (∃ hb hcs, Base64url.decode t.headerSeg = some hb ∧
@@ -58,13 +58,13 @@ theorem Spec.parseToken_reads (s : List Char) (t : Token)
     form) gives that token back, for values that are well formed
     in the JSON slice's sense. So a printer that wrote nothing, or
     wrote something shorter, fails this statement. -/
-theorem Spec.parseToken_print (h c : Json.Json) (sig : List UInt8)
+theorem Jws.Spec.parseToken_print (h c : Json.Json) (sig : List UInt8)
     (hh : Json.WF h) (hc : Json.WF c) :
     parseToken (printToken (makeToken h c sig)) = some (makeToken h c sig) := sorry
 
 /-- Decoding the base64url encoding of any bytes gives the
     bytes back. -/
-theorem Spec.decode_encode (bs : List UInt8) :
+theorem Jws.Spec.decode_encode (bs : List UInt8) :
     Base64url.decode (Base64url.encode bs) = some bs := sorry
 
 /-! ## Strict decoding
@@ -78,20 +78,20 @@ nothing above U+10FFFF. -/
 /-- Encoding what the base64url decoder returned gives the text
     back: the decoder accepts only the canonical, unpadded
     encoding of the bytes it returns. -/
-theorem Spec.encode_decode (cs : List Char) (bs : List UInt8)
+theorem Jws.Spec.encode_decode (cs : List Char) (bs : List UInt8)
     (h : Base64url.decode cs = some bs) :
     Base64url.encode bs = cs := sorry
 
 /-- Decoding the UTF-8 encoding of any text gives the text
     back. -/
-theorem Spec.utf8_decode_encode (cs : List Char) :
+theorem Jws.Spec.utf8_decode_encode (cs : List Char) :
     Utf8.decode (Utf8.encode cs) = some cs := sorry
 
 /-- Encoding what the UTF-8 decoder returned gives the bytes
     back: the decoder accepts only what `Utf8.encode` writes for
     the text it returns. That `Utf8.encode` writes the standard
     encoding (RFC 3629) is not stated here. -/
-theorem Spec.utf8_encode_decode (bs : List UInt8) (cs : List Char)
+theorem Jws.Spec.utf8_encode_decode (bs : List UInt8) (cs : List Char)
     (h : Utf8.decode bs = some cs) :
     Utf8.encode cs = bs := sorry
 
@@ -99,7 +99,7 @@ theorem Spec.utf8_encode_decode (bs : List UInt8) (cs : List Char)
     forms C0 80, E0 80 80 and F0 80 80 80; the encoded surrogate
     ED A0 80; F4 90 80 80, above U+10FFFF; a stray continuation
     byte 80; the truncated E2 82; and the five byte lead F8. -/
-theorem Spec.utf8_rejects_ill_formed :
+theorem Jws.Spec.utf8_rejects_ill_formed :
     ([[0xC0, 0x80], [0xE0, 0x80, 0x80], [0xF0, 0x80, 0x80, 0x80],
       [0xED, 0xA0, 0x80], [0xF4, 0x90, 0x80, 0x80], [0x80], [0xE2, 0x82],
       [0xF8, 0x88, 0x80, 0x80, 0x80]] : List (List UInt8)).all
@@ -120,7 +120,7 @@ can check each rule against one concrete case. -/
     supplied, so the time comparisons are skipped and the type
     rules still hold. The harness case is "A.1 accept (no time
     checks, issuer checked)". -/
-theorem Spec.accepts_rfc_a1 :
+theorem Jws.Spec.accepts_rfc_a1 :
     (match parseToken
       "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk".toList with
      | some t => accept t
@@ -133,7 +133,7 @@ theorem Spec.accepts_rfc_a1 :
     signature, HS256 allowed, the current time 1500000000
     before the expiry, and the issuer required to be `joe`.
     The harness case is "base accept". -/
-theorem Spec.accepts_hand_built :
+theorem Jws.Spec.accepts_hand_built :
     (match parseToken
       "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDB9.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8".toList with
      | some t => accept t
@@ -146,7 +146,7 @@ theorem Spec.accepts_hand_built :
     signature part) is refused when HS256 is the allowed
     algorithm. The harness case is "A.5 reject (alg none,
     HS256 allowed)". -/
-theorem Spec.rejects_unsecured_none :
+theorem Jws.Spec.rejects_unsecured_none :
     (match parseToken
       "eyJhbGciOiJub25lIn0.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.".toList with
      | some t => accept t
@@ -157,7 +157,7 @@ theorem Spec.rejects_unsecured_none :
 /-- The A.5 token is refused when the allowlist itself names
     `none`: such a context refuses every token. The harness
     case is "A.5 reject (alg none, allowlist names none)". -/
-theorem Spec.rejects_unsecured_none_when_allowlist_names_none :
+theorem Jws.Spec.rejects_unsecured_none_when_allowlist_names_none :
     (match parseToken
       "eyJhbGciOiJub25lIn0.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.".toList with
      | some t => accept t
@@ -168,7 +168,7 @@ theorem Spec.rejects_unsecured_none_when_allowlist_names_none :
 /-- The A.5 token is refused when the allowlist names `none`
     alongside HS256. The harness case is "A.5 reject (alg
     none, allowlist names none and HS256)". -/
-theorem Spec.rejects_unsecured_none_when_allowlist_mixes_none :
+theorem Jws.Spec.rejects_unsecured_none_when_allowlist_mixes_none :
     (match parseToken
       "eyJhbGciOiJub25lIn0.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.".toList with
      | some t => accept t
@@ -183,7 +183,7 @@ theorem Spec.rejects_unsecured_none_when_allowlist_mixes_none :
     issuer required to be `joe`. The harness case is "A.1
     reject (signature part emptied, otherwise passing
     context)", the case the 2026-10-27 review change pinned. -/
-theorem Spec.rejects_empty_signature :
+theorem Jws.Spec.rejects_empty_signature :
     (match parseToken
       "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.".toList with
      | some t => accept t
@@ -195,7 +195,7 @@ theorem Spec.rejects_empty_signature :
 /-- The A.1 token is refused when its algorithm, HS256, is
     outside the allowlist, here RS256 alone. The harness case
     is "A.1 reject (alg not allowed)". -/
-theorem Spec.rejects_alg_outside_allowlist :
+theorem Jws.Spec.rejects_alg_outside_allowlist :
     (match parseToken
       "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk".toList with
      | some t => accept t
@@ -208,7 +208,7 @@ theorem Spec.rejects_alg_outside_allowlist :
     and padding is not part of the compact form. The harness
     case is "mutation: padding on header part", built on its
     hand built token. -/
-theorem Spec.rejects_part_not_base64url :
+theorem Jws.Spec.rejects_part_not_base64url :
     (parseToken
       "eyJhbGciOiJIUzI1NiJ9=.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDB9.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8".toList).isSome
       = false := sorry
@@ -218,7 +218,7 @@ theorem Spec.rejects_part_not_base64url :
     on the harness's hand built payload and signature, under
     its base context. The harness case is "mutation: header
     is an array". -/
-theorem Spec.rejects_header_not_object :
+theorem Jws.Spec.rejects_header_not_object :
     (match parseToken
       "WyJIUzI1NiJd.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDB9.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8".toList with
      | some t => accept t
@@ -236,7 +236,7 @@ set. This slice turns such a token away. -/
 /-- An accepted token has a JSON object for its header and for its
     claims, and neither object repeats a member name. Members of
     objects nested inside them are not covered. -/
-theorem Spec.accept_names_unique (t : Token) (ctx : Context)
+theorem Jws.Spec.accept_names_unique (t : Token) (ctx : Context)
     (h : accept t ctx = true) :
     ∃ hkvs ckvs, t.header = .obj hkvs ∧ t.claims = .obj ckvs ∧
       (hkvs.map Prod.fst).Nodup ∧ (ckvs.map Prod.fst).Nodup := sorry
@@ -246,7 +246,7 @@ theorem Spec.accept_names_unique (t : Token) (ctx : Context)
     parses (the parser keeps both copies) and is refused under
     every context. The harness case is "duplicate alg (HS256 then
     none): refused". -/
-theorem Spec.rejects_duplicate_alg (ctx : Context) :
+theorem Jws.Spec.rejects_duplicate_alg (ctx : Context) :
     ∃ t, parseToken
       "eyJhbGciOiJIUzI1NiIsImFsZyI6Im5vbmUifQ.eyJleHAiOjIwMDAwMDAwMDB9.AQID".toList
         = some t ∧ accept t ctx = false := sorry
@@ -256,7 +256,7 @@ theorem Spec.rejects_duplicate_alg (ctx : Context) :
     `{"alg":"HS256"}` and signature bytes 01 02 03, parses and is
     refused under every context. The harness case is "duplicate
     iss (joe then evil): refused". -/
-theorem Spec.rejects_duplicate_iss (ctx : Context) :
+theorem Jws.Spec.rejects_duplicate_iss (ctx : Context) :
     ∃ t, parseToken
       "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImlzcyI6ImV2aWwifQ.AQID".toList
         = some t ∧ accept t ctx = false := sorry
@@ -270,7 +270,7 @@ a `crit` member, whatever its value. -/
 
 /-- An accepted token's header is an object with no `crit`
     member. -/
-theorem Spec.accept_no_crit (t : Token) (ctx : Context)
+theorem Jws.Spec.accept_no_crit (t : Token) (ctx : Context)
     (h : accept t ctx = true) :
     ∃ hkvs, t.header = .obj hkvs ∧ "crit".toList ∉ hkvs.map Prod.fst := sorry
 
@@ -280,7 +280,7 @@ theorem Spec.accept_no_crit (t : Token) (ctx : Context)
     covers), with claims `{"exp":2000000000}` and signature bytes
     01 02 03, parses and is refused under every context. The
     harness case is "crit naming b64: refused". -/
-theorem Spec.rejects_crit_b64 (ctx : Context) :
+theorem Jws.Spec.rejects_crit_b64 (ctx : Context) :
     ∃ t, parseToken
       "eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19.eyJleHAiOjIwMDAwMDAwMDB9.AQID".toList
         = some t ∧ accept t ctx = false := sorry
@@ -299,7 +299,7 @@ itself with none, so such a token is turned away. -/
     the issuer must be `joe`, and no audience is expected. The
     harness case is "aud present, no audience expected:
     refused". -/
-theorem Spec.rejects_aud_without_audience :
+theorem Jws.Spec.rejects_aud_without_audience :
     (parseToken
       "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.AQID".toList).map
       (fun t => accept t
@@ -311,7 +311,7 @@ theorem Spec.rejects_aud_without_audience :
     expected audience is `other-tenant`, so the refusal above
     comes from the audience rule alone. The harness case is "aud
     present, the same audience expected: accepted". -/
-theorem Spec.accepts_aud_with_audience :
+theorem Jws.Spec.accepts_aud_with_audience :
     (parseToken
       "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLCJleHAiOjIwMDAwMDAwMDAsImF1ZCI6Im90aGVyLXRlbmFudCJ9.AQID".toList).map
       (fun t => accept t
@@ -329,7 +329,7 @@ compares such a value exactly with the current time. -/
     accepted at the current time 2000000000, half a second before
     it expires, with HS256 allowed. The harness case is
     "fractional exp, now half a second before: accepted". -/
-theorem Spec.accepts_fractional_exp_before :
+theorem Jws.Spec.accepts_fractional_exp_before :
     (parseToken
       "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.AQID".toList).map
       (fun t => accept t
@@ -340,7 +340,7 @@ theorem Spec.accepts_fractional_exp_before :
 /-- The same token is refused one second later, at 2000000001,
     after it has expired. The harness case is "fractional exp, now
     half a second after: refused". -/
-theorem Spec.rejects_fractional_exp_after :
+theorem Jws.Spec.rejects_fractional_exp_after :
     (parseToken
       "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjIwMDAwMDAwMDAuNX0.AQID".toList).map
       (fun t => accept t
@@ -354,7 +354,7 @@ The date rules compare the current time with the number an `exp`
 or `nbf` claim holds, through the checker's exact decimal reading
 `numVal` and its comparison `NumVal.cmp`. These statements tie
 both to the decimal value of the number text, defined in
-`Spec/Defs.lean` from the JSON grammar: `numberText` builds a text
+`Jws/Spec/Defs.lean` from the JSON grammar: `numberText` builds a text
 from its pieces, `digitsValue` and `expValue` give the value of
 the digits and of the exponent part, and `atBase` writes a decimal
 as a whole number over a chosen power of ten. -/
@@ -363,7 +363,7 @@ as a whole number over a chosen power of ten. -/
     over any power of ten `10^m` with `m` at most both exponents,
     it is the comparison of the two values written as whole
     numbers over `10^m`. -/
-theorem Spec.cmp_exact (a b : NumVal) (m : Int) (ha : m ≤ a.exp) (hb : m ≤ b.exp) :
+theorem Jws.Spec.cmp_exact (a b : NumVal) (m : Int) (ha : m ≤ a.exp) (hb : m ≤ b.exp) :
     NumVal.cmp a b = compare (atBase a.neg a.sig a.exp m) (atBase b.neg b.sig b.exp m) := sorry
 
 /-- `numVal` reads every number text of the JSON grammar (an
@@ -372,7 +372,7 @@ theorem Spec.cmp_exact (a b : NumVal) (m : Int) (ha : m ≤ a.exp) (hb : m ≤ b
     and what it returns has the text's decimal value: the sign,
     the integer and fraction digits read as one whole number, and
     ten to the exponent less the count of fraction digits. -/
-theorem Spec.numVal_value (neg : Bool) (ints frac ex : List Char)
+theorem Jws.Spec.numVal_value (neg : Bool) (ints frac ex : List Char)
     (hi : ints ≠ [] ∧ ∀ d ∈ ints, Json.IsDigit d) (hf : ∀ d ∈ frac, Json.IsDigit d)
     (hx : Json.ExpOk ex) :
     ∃ v, numVal (numberText neg ints frac ex) = some v ∧
@@ -386,7 +386,7 @@ theorem Spec.numVal_value (neg : Bool) (ints frac ex : List Char)
     number `now` with the text's decimal value: both are written
     as whole numbers over `10^m`, where `m` is the smaller of zero
     and the text's exponent less its count of fraction digits. -/
-theorem Spec.numVal_cmp_now (now : Int) (neg : Bool) (ints frac ex : List Char)
+theorem Jws.Spec.numVal_cmp_now (now : Int) (neg : Bool) (ints frac ex : List Char)
     (hi : ints ≠ [] ∧ ∀ d ∈ ints, Json.IsDigit d) (hf : ∀ d ∈ frac, Json.IsDigit d)
     (hx : Json.ExpOk ex) :
     ∃ v, numVal (numberText neg ints frac ex) = some v ∧
@@ -400,7 +400,7 @@ theorem Spec.numVal_cmp_now (now : Int) (neg : Bool) (ints frac ex : List Char)
     current time 0, with HS256 allowed: it expired a second before.
     A reading that dropped the minus sign would accept it. The
     harness case is "mutation: negative exp, now zero (reject)". -/
-theorem Spec.rejects_negative_exp :
+theorem Jws.Spec.rejects_negative_exp :
     (parseToken
       "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOi0xfQ.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8".toList).map
       (fun t => accept t
@@ -412,7 +412,7 @@ theorem Spec.rejects_negative_exp :
     accepted at the current time -1, half a second before the
     expiry. The harness case is "exp a negative fraction -0.5, now
     -1: accepted". -/
-theorem Spec.accepts_negative_fraction_exp :
+theorem Jws.Spec.accepts_negative_fraction_exp :
     (parseToken
       "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOi0wLjV9.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8".toList).map
       (fun t => accept t
@@ -442,7 +442,7 @@ checks. One statement collects every rule the check applies. -/
     expected, or names the expected audience when one is. A
     program that accepts nothing meets this statement; the
     accepting statements above are what rule it out. -/
-theorem Spec.accept_sound (t : Token) (ctx : Context)
+theorem Jws.Spec.accept_sound (t : Token) (ctx : Context)
     (h : accept t ctx = true) :
     "none".toList ∉ ctx.allow ∧ t.sig ≠ [] ∧
     ∃ hkvs ckvs, t.header = .obj hkvs ∧ t.claims = .obj ckvs ∧

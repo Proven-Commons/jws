@@ -1,5 +1,5 @@
 import Jws.Utf8
-import Proofs.B64
+import Jws.Proofs.B64
 
 namespace Jws.Utf8.Proofs
 

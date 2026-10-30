@@ -1,7 +1,7 @@
 name = "jws"
 version = "0.1.0"
 license = "Apache-2.0"
-defaultTargets = ["Json", "Jws", "Proofs", "jws"]
+defaultTargets = ["Json", "Jws", "JwsSpec", "JwsProofs", "jws"]
 
 [[lean_lib]]
 name = "Json"
@@ -10,10 +10,12 @@ name = "Json"
 name = "Jws"
 
 [[lean_lib]]
-name = "Proofs"
+name = "JwsSpec"
+roots = ["Jws.Spec"]
 
 [[lean_lib]]
-name = "Spec"
+name = "JwsProofs"
+roots = ["Jws.Proofs"]
 
 [[lean_exe]]
 name = "jws"

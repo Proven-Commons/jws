@@ -1,6 +1,6 @@
 import Jws.Token
-import Spec.Defs
-import Proofs.RoundTrip
+import Jws.Spec.Defs
+import Jws.Proofs.RoundTrip
 
 /-
   Proofs about the checker's exact decimal reading of claim numbers:
@@ -12,7 +12,7 @@ import Proofs.RoundTrip
 
 namespace Jws.Proofs.Num
 
-open Jws Spec
+open Jws Jws.Spec
 
 /-! ## Comparisons -/
 

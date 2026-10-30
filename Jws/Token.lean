@@ -54,7 +54,7 @@ def joinSep (sep : Char) : List (List Char) → List Char
     `claims` are the JSON values those two parts decode to, and
     `sig` is the signature bytes, returned unchanged. A token comes
     from `parseToken` (a received text) or `makeToken` (values to
-    send); the theorems in `Spec.lean` say how each fills the
+    send); the theorems in `Jws/Spec.lean` say how each fills the
     fields. -/
 structure Token where
   headerSeg : List Char
@@ -66,7 +66,7 @@ structure Token where
 /-- Print a token: the two received parts as they are held, then
     the signature bytes in base64url without padding, joined by
     dots. For a parsed token this gives back the received text
-    exactly (`Spec.printToken_parse`); it never re-encodes the
+    exactly (`Jws.Spec.printToken_parse`); it never re-encodes the
     JSON values. -/
 def printToken (t : Token) : List Char :=
   joinSep '.' [t.headerSeg, t.payloadSeg, Base64url.encode t.sig]

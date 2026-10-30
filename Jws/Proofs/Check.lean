@@ -3,7 +3,7 @@ import Jws.Token
 /-
   Proofs about the check, `Jws.accept`: what an accepted token is
   known to satisfy, and the lemmas the single token statements in
-  `Spec.lean` use to cover every context at once.
+  `Jws/Spec.lean` use to cover every context at once.
 -/
 
 namespace Jws.Proofs

@@ -1,7 +1,7 @@
 import Jws.Token
-import Proofs.RoundTrip
-import Proofs.B64
-import Proofs.Utf8
+import Jws.Proofs.RoundTrip
+import Jws.Proofs.B64
+import Jws.Proofs.Utf8
 
 namespace Jws.Proofs
 
